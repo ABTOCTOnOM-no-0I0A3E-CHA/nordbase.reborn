@@ -20,13 +20,10 @@ async function findHouse(slug: string) {
   return rows[0];
 }
 
-export async function generateStaticParams() {
-  const rows = await db
-    .select({ slug: houses.slug })
-    .from(houses)
-    .where(eq(houses.status, 'published'));
-  return rows.map((r) => ({ slug: r.slug }));
-}
+/* Рендерим на каждый запрос: контент правится в админке, и страница обязана
+   показывать текущее состояние, а не снимок на момент сборки. Нагрузка тут
+   в единицы запросов в минуту, кешировать нечего. */
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({
   params,

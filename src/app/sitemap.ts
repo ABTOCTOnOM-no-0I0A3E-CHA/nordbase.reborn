@@ -4,6 +4,10 @@ import { db } from '@/db';
 import { houses, pages, seasons, tours } from '@/db/schema';
 import { siteUrl } from '@/lib/site-url';
 
+/* Карта сайта строится из БД на каждый запрос — иначе новые страницы
+   владельца не попадут в неё до следующей сборки. */
+export const dynamic = 'force-dynamic';
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [pageRows, houseRows, tourRows, seasonRows] = await Promise.all([
     db

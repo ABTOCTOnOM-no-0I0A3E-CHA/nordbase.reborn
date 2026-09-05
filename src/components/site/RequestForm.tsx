@@ -11,15 +11,39 @@ const field =
   'w-full rounded-[10px] border border-line-2 bg-bg-3 px-3 py-3 text-[15px] text-ink focus:border-transparent focus:outline-2 focus:outline-aurora';
 const label = 'mb-2 block text-[12.5px] font-semibold text-ink-3';
 
+/* Перечень дат между заездом и выездом включительно. */
+function rangeDates(from: string, to: string): string[] {
+  if (!from || !to || to < from) return [];
+  const out: string[] = [];
+  const cursor = new Date(`${from}T00:00:00Z`);
+  const end = new Date(`${to}T00:00:00Z`);
+  while (cursor <= end) {
+    out.push(cursor.toISOString().slice(0, 10));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return out;
+}
+
 export function RequestForm({
   houses,
   tours,
+  busyByHouse = {},
 }: {
   houses: Pick<HouseRecord, 'id' | 'title'>[];
   tours: Pick<TourRecord, 'id' | 'title'>[];
+  busyByHouse?: Record<string, string[]>;
 }) {
   const [state, formAction, pending] = useActionState(submitRequest, initial);
   const [guests, setGuests] = useState(2);
+  const [houseId, setHouseId] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+
+  /* Предупреждаем сразу, а не после отправки: занятые даты видны гостю,
+     и он не тратит время на заявку, которую всё равно придётся переносить. */
+  const busy = houseId ? (busyByHouse[houseId] ?? []) : [];
+  const clash = rangeDates(dateFrom, dateTo).filter((date) => busy.includes(date));
+  const today = new Date().toISOString().slice(0, 10);
 
   if (state.ok) {
     return (
@@ -67,7 +91,13 @@ export function RequestForm({
           <label className={label} htmlFor="houseId">
             Домик
           </label>
-          <select id="houseId" name="houseId" className={field} defaultValue="">
+          <select
+            id="houseId"
+            name="houseId"
+            className={field}
+            value={houseId}
+            onChange={(e) => setHouseId(e.target.value)}
+          >
             <option value="">Не выбран</option>
             {houses.map((house) => (
               <option key={house.id} value={house.id}>
@@ -82,15 +112,39 @@ export function RequestForm({
         <label className={label} htmlFor="dateFrom">
           Заезд
         </label>
-        <input id="dateFrom" name="dateFrom" type="date" className={field} />
+        <input
+          id="dateFrom"
+          name="dateFrom"
+          type="date"
+          min={today}
+          className={field}
+          value={dateFrom}
+          onChange={(e) => setDateFrom(e.target.value)}
+        />
       </div>
 
       <div>
         <label className={label} htmlFor="dateTo">
           Выезд
         </label>
-        <input id="dateTo" name="dateTo" type="date" className={field} />
+        <input
+          id="dateTo"
+          name="dateTo"
+          type="date"
+          min={dateFrom || today}
+          className={field}
+          value={dateTo}
+          onChange={(e) => setDateTo(e.target.value)}
+        />
       </div>
+
+      {clash.length > 0 ? (
+        <p className="text-busy bg-busy/10 rounded-[10px] px-4 py-3 text-[13.5px] md:col-span-2">
+          Выбранный домик занят{' '}
+          {clash.length === 1 ? 'на дату' : `на ${clash.length} из выбранных дат`}. Заявку оставить
+          можно — предложим свободные даты или другой домик.
+        </p>
+      ) : null}
 
       <div>
         <label className={label} htmlFor="guests">

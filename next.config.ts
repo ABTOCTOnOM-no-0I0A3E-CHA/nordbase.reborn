@@ -5,6 +5,11 @@ import type { NextConfig } from 'next';
 const publicMedia = process.env.S3_PUBLIC_URL;
 
 const config: NextConfig = {
+  experimental: {
+    /* Медиатека принимает до 20 МБ на файл и несколько файлов за раз —
+       дефолтный лимит на тело Server Action (1 МБ) для этого мал. */
+    serverActions: { bodySizeLimit: '80mb' },
+  },
   images: {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: publicMedia

@@ -19,10 +19,10 @@ async function findTour(slug: string) {
   return rows[0];
 }
 
-export async function generateStaticParams() {
-  const rows = await db.select({ slug: tours.slug }).from(tours).where(eq(tours.status, 'published'));
-  return rows.map((r) => ({ slug: r.slug }));
-}
+/* Рендерим на каждый запрос: контент правится в админке, и страница обязана
+   показывать текущее состояние, а не снимок на момент сборки. Нагрузка тут
+   в единицы запросов в минуту, кешировать нечего. */
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const tour = await findTour((await params).slug);

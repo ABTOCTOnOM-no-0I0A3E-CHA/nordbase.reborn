@@ -20,13 +20,10 @@ async function findSeason(slug: string) {
   return rows[0];
 }
 
-export async function generateStaticParams() {
-  const rows = await db
-    .select({ slug: seasons.slug })
-    .from(seasons)
-    .where(eq(seasons.status, 'published'));
-  return rows.map((r) => ({ season: r.slug }));
-}
+/* Рендерим на каждый запрос: контент правится в админке, и страница обязана
+   показывать текущее состояние, а не снимок на момент сборки. Нагрузка тут
+   в единицы запросов в минуту, кешировать нечего. */
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const season = await findSeason((await params).season);

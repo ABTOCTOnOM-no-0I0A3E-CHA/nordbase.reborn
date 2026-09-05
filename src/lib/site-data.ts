@@ -122,6 +122,35 @@ export async function loadBlockData(blocks: Block[]): Promise<BlockData> {
   };
 }
 
+/* Списки для формы заявки. Если блоки «Домики» и «Туры» на странице уже есть,
+   переиспользуем загруженное, иначе идём в БД — лишнего запроса не будет. */
+export async function loadRequestFormOptions(data: BlockData): Promise<{
+  houses: { id: string; title: string }[];
+  tours: { id: string; title: string }[];
+}> {
+  const [houseRows, tourRows] = await Promise.all([
+    data.houses.length > 0
+      ? data.houses
+      : db
+          .select({ id: housesTable.id, title: housesTable.title })
+          .from(housesTable)
+          .where(eq(housesTable.status, 'published'))
+          .orderBy(asc(housesTable.sort)),
+    data.tours.length > 0
+      ? data.tours
+      : db
+          .select({ id: toursTable.id, title: toursTable.title })
+          .from(toursTable)
+          .where(eq(toursTable.status, 'published'))
+          .orderBy(asc(toursTable.sort)),
+  ]);
+
+  return {
+    houses: houseRows.map((h) => ({ id: h.id, title: h.title })),
+    tours: tourRows.map((t) => ({ id: t.id, title: t.title })),
+  };
+}
+
 /* ------------------------------------------------------------ настройки */
 
 export type SiteSettings = {

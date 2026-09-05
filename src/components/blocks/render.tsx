@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Block } from '@/lib/blocks';
-import type { BlockData } from '@/lib/site-data';
+import { loadRequestFormOptions, type BlockData } from '@/lib/site-data';
+import { loadBusyDates } from '@/lib/occupancy';
 import { Aurora } from '@/components/site/Aurora';
 import { Btn, Card, Eyebrow, Prose, Section, SectionHead, Wrap } from '@/components/site/ui';
 import { Picture } from './Picture';
@@ -394,6 +395,28 @@ function Reviews({ block, data }: { block: Extract<Block, { type: 'reviews' }>; 
   );
 }
 
+/* Блок формы всегда показывает домики и туры, даже если на этой странице нет
+   блоков «Домики» и «Туры» — иначе в выпадающих списках было бы пусто. */
+async function RequestFormSection({
+  block,
+  data,
+}: {
+  block: Extract<Block, { type: 'requestForm' }>;
+  data: BlockData;
+}) {
+  const [{ houses, tours }, busyByHouse] = await Promise.all([
+    loadRequestFormOptions(data),
+    loadBusyDates(),
+  ]);
+
+  return (
+    <>
+      <SectionHead eyebrow={block.eyebrow} title={block.title} subtitle={block.subtitle} />
+      <RequestForm houses={houses} tours={tours} busyByHouse={busyByHouse} />
+    </>
+  );
+}
+
 /* ------------------------------------------------------------- диспетчер */
 
 /* Hero сам себе секция — на всю ширину, без отступов и подложки. */
@@ -440,12 +463,7 @@ function Body({ block, data }: { block: Block; data: BlockData }) {
     case 'reviews':
       return <Reviews block={block} data={data} />;
     case 'requestForm':
-      return (
-        <>
-          <SectionHead eyebrow={block.eyebrow} title={block.title} subtitle={block.subtitle} />
-          <RequestForm houses={data.houses} tours={data.tours} />
-        </>
-      );
+      return <RequestFormSection block={block} data={data} />;
   }
 }
 

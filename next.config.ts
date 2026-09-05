@@ -5,10 +5,14 @@ import type { NextConfig } from 'next';
 const publicMedia = process.env.S3_PUBLIC_URL;
 
 const config: NextConfig = {
+  /* Standalone-сборка тащит в образ только нужные модули: итоговый слой
+     в разы легче, чем весь node_modules. */
+  output: 'standalone',
   experimental: {
-    /* Медиатека принимает до 20 МБ на файл и несколько файлов за раз —
-       дефолтный лимит на тело Server Action (1 МБ) для этого мал. */
-    serverActions: { bodySizeLimit: '80mb' },
+    /* Лимит общий на все Server Actions, включая открытую всем форму заявки,
+       поэтому держим его настолько низким, насколько позволяет медиатека:
+       один файл до 20 МБ плюс запас на кодирование. Пачку фото грузим партиями. */
+    serverActions: { bodySizeLimit: '30mb' },
   },
   images: {
     formats: ['image/avif', 'image/webp'],

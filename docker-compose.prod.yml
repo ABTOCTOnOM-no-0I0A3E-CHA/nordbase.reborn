@@ -1,0 +1,57 @@
+# Боевой запуск на VPS: приложение, Postgres и Caddy с автоматическим TLS.
+# docker compose -f docker-compose.prod.yml up -d --build
+
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-nordbase}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?задайте POSTGRES_PASSWORD в .env}
+      POSTGRES_DB: ${POSTGRES_DB:-nordbase}
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-nordbase}']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # Порт наружу не открываем: до базы достаточно доступа из сети compose.
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-nordbase}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-nordbase}
+      SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-nb_session}
+      SITE_URL: ${SITE_URL:?задайте SITE_URL, например https://nordbase.ru}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+    volumes:
+      - uploads:/app/public/uploads
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?задайте SITE_DOMAIN, например nordbase.ru}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # тот же том, что и у приложения: Caddy раздаёт фото напрямую
+      - uploads:/srv/uploads:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  uploads:
+  caddy_data:
+  caddy_config:

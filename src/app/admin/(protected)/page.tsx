@@ -1,8 +1,9 @@
 import Link from 'next/link';
-import { asc, desc, eq, gte, ne, sql, and } from 'drizzle-orm';
+import { asc, desc, eq, gt, ne, sql, and } from 'drizzle-orm';
 import { db } from '@/db';
 import { bookings, houses, media, pages, requests } from '@/db/schema';
 import { AdminHeading, Panel } from '@/components/admin/ui';
+import { todayIso } from '@/lib/dates';
 
 export const metadata = { title: 'Панель' };
 
@@ -12,7 +13,7 @@ function formatDate(value: string): string {
 }
 
 export default async function Dashboard() {
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const today = todayIso();
 
   const [counts, latest, upcoming, gaps] = await Promise.all([
     db
@@ -45,7 +46,7 @@ export default async function Dashboard() {
       })
       .from(bookings)
       .innerJoin(houses, eq(bookings.houseId, houses.id))
-      .where(and(gte(bookings.dateTo, todayIso), ne(bookings.status, 'cancelled')))
+      .where(and(gt(bookings.dateTo, today), ne(bookings.status, 'cancelled')))
       .orderBy(asc(bookings.dateFrom))
       .limit(5),
 

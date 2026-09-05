@@ -1,5 +1,6 @@
 import { Header } from '@/components/site/Header';
 import { Footer } from '@/components/site/Footer';
+import { JsonLd } from '@/components/site/JsonLd';
 import { loadSettings } from '@/lib/site-data';
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
@@ -7,6 +8,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
 
   return (
     <>
+      <JsonLd settings={settings} />
       <Header menu={settings.menu} />
       <main>{children}</main>
       <Footer settings={settings} />

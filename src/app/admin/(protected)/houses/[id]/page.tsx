@@ -4,12 +4,14 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { houses } from '@/db/schema';
 import { parseBlocks } from '@/lib/blocks';
+import { isUuid } from '@/lib/uuid';
 import { loadMediaOptions } from '@/lib/admin/media-options';
 import { saveHouse, saveHouseBlocks } from '@/lib/admin/content-actions';
-import { AdminHeading, Field, Input, Panel, Select, Submit, Textarea } from '@/components/admin/ui';
+import { AdminHeading, Field, Input, Panel, Select, Textarea } from '@/components/admin/ui';
 import { CoverField } from '@/components/admin/CoverField';
 import { MetaFields } from '@/components/admin/MetaFields';
 import { BlockEditor } from '@/components/admin/BlockEditor';
+import { EntityForm } from '@/components/admin/EntityForm';
 
 export const metadata = { title: 'Домик' };
 
@@ -18,6 +20,8 @@ export const metadata = { title: 'Домик' };
 export default async function HouseEditor({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const isNew = id === 'new';
+  /* Опечатка в адресе — это «не найдено», а не ошибка синтаксиса uuid. */
+  if (!isNew && !isUuid(id)) notFound();
 
   const [rows, media] = await Promise.all([
     isNew ? [] : db.select().from(houses).where(eq(houses.id, id)).limit(1),
@@ -40,14 +44,17 @@ export default async function HouseEditor({ params }: { params: Promise<{ id: st
       />
 
       <Panel className="mb-6">
-        <form action={saveHouse} className="grid gap-4 sm:grid-cols-2">
+        <EntityForm
+          action={saveHouse}
+          submitLabel={house ? 'Сохранить' : 'Создать домик'}
+        >
           <input type="hidden" name="id" value={house?.id ?? ''} />
 
           <Field label="Название">
             <Input name="title" defaultValue={house?.title ?? ''} required placeholder="Эко-дом №4" />
           </Field>
           <Field label="Адрес" hint="Латиницей, попадёт в ссылку">
-            <Input name="slug" defaultValue={house?.slug ?? ''} required placeholder="dom-4" />
+            <Input name="slug" pattern="[a-z0-9][a-z0-9\-]*" maxLength={120} defaultValue={house?.slug ?? ''} required placeholder="dom-4" />
           </Field>
 
           <div className="sm:col-span-2">
@@ -57,7 +64,7 @@ export default async function HouseEditor({ params }: { params: Promise<{ id: st
           </div>
 
           <Field label="Вместимость, гостей">
-            <Input name="capacity" type="number" min={1} defaultValue={house?.capacity ?? 4} required />
+            <Input name="capacity" type="number" min={1} max={30} defaultValue={house?.capacity ?? 4} required />
           </Field>
           <Field label="Цена, ₽ за человека в сутки" hint="Пусто — цена не показывается">
             <Input name="pricePerNight" type="number" min={0} defaultValue={house?.pricePerNight ?? ''} />
@@ -85,10 +92,7 @@ export default async function HouseEditor({ params }: { params: Promise<{ id: st
             </Field>
           </div>
 
-          <div className="sm:col-span-2">
-            <Submit>{house ? 'Сохранить' : 'Создать домик'}</Submit>
-          </div>
-        </form>
+        </EntityForm>
       </Panel>
 
       {house ? (

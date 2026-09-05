@@ -1,21 +1,19 @@
 import 'server-only';
-import { and, gte, lte, ne } from 'drizzle-orm';
+import { and, gt, lt, ne } from 'drizzle-orm';
 import { db } from '@/db';
 import { bookings } from '@/db/schema';
+import { addDays, occupiedDates, todayIso } from './dates';
 
 /* Занятые даты по домикам. Сайт и админка читают одну таблицу bookings —
-   если развести на два источника, они разойдутся в первый же месяц. */
+   если развести на два источника, они разойдутся в первый же месяц.
+
+   Интервал полуоткрытый: [заезд; выезд). День выезда свободен, иначе оборот
+   «одни выехали утром, другие заехали днём» становится невозможен. */
 
 export type BusyByHouse = Record<string, string[]>;
 
-function addDays(iso: string, days: number): string {
-  const date = new Date(`${iso}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + days);
-  return date.toISOString().slice(0, 10);
-}
-
 export async function loadBusyDates(monthsAhead = 12): Promise<BusyByHouse> {
-  const from = new Date().toISOString().slice(0, 10);
+  const from = todayIso();
   const to = addDays(from, monthsAhead * 31);
 
   const rows = await db
@@ -25,14 +23,7 @@ export async function loadBusyDates(monthsAhead = 12): Promise<BusyByHouse> {
       dateTo: bookings.dateTo,
     })
     .from(bookings)
-    .where(
-      and(
-        ne(bookings.status, 'cancelled'),
-        /* Пересечение интервала брони с окном [from; to] */
-        lte(bookings.dateFrom, to),
-        gte(bookings.dateTo, from),
-      ),
-    );
+    .where(and(ne(bookings.status, 'cancelled'), lt(bookings.dateFrom, to), gt(bookings.dateTo, from)));
 
   const busy: BusyByHouse = {};
 
@@ -40,12 +31,9 @@ export async function loadBusyDates(monthsAhead = 12): Promise<BusyByHouse> {
     const list = busy[row.houseId] ?? [];
     /* Разворачиваем интервал в перечень дат: их немного, а проверять занятость
        в браузере так можно одним includes, без арифметики диапазонов. */
-    let cursor = row.dateFrom < from ? from : row.dateFrom;
+    const start = row.dateFrom < from ? from : row.dateFrom;
     const end = row.dateTo > to ? to : row.dateTo;
-    while (cursor <= end) {
-      list.push(cursor);
-      cursor = addDays(cursor, 1);
-    }
+    list.push(...occupiedDates(start, end));
     busy[row.houseId] = list;
   }
 

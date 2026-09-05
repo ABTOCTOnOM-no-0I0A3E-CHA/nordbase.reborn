@@ -11,6 +11,7 @@ import {
   settings as settingsTable,
   tours as toursTable,
 } from '@/db/schema';
+import { z } from 'zod';
 import type { Block } from './blocks';
 
 export type MediaRecord = typeof mediaTable.$inferSelect;
@@ -20,6 +21,20 @@ export type SeasonRecord = typeof seasonsTable.$inferSelect;
 export type PriceRecord = typeof pricesTable.$inferSelect;
 export type FaqRecord = typeof faqTable.$inferSelect;
 export type ReviewRecord = typeof reviewsTable.$inferSelect;
+
+/* $type в drizzle — это утверждение, а не проверка: в колонке может оказаться
+   что угодно. Пары «название → значение» правит владелец, поэтому мусор просто
+   отбрасываем, а не роняем публичную страницу. */
+export function parseMeta(value: unknown): { label: string; value: string }[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (row): row is { label: string; value: string } =>
+      typeof row === 'object' &&
+      row !== null &&
+      typeof (row as { label?: unknown }).label === 'string' &&
+      typeof (row as { value?: unknown }).value === 'string',
+  );
+}
 
 export type BlockData = {
   media: Map<string, MediaRecord>;
@@ -182,11 +197,27 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   ],
 };
 
+/* Настройки читает layout, то есть каждая страница сайта. Спред без проверки
+   означал, что menu: null из ручной правки БД уронит вообще всё, включая
+   главную. Поэтому разбираем схемой и на любой мусор берём значение по умолчанию. */
+const settingsSchema = z.object({
+  phone: z.string().catch(DEFAULT_SETTINGS.phone),
+  telegram: z.string().catch(DEFAULT_SETTINGS.telegram),
+  whatsapp: z.string().catch(DEFAULT_SETTINGS.whatsapp),
+  vk: z.string().catch(DEFAULT_SETTINGS.vk),
+  address: z.string().catch(DEFAULT_SETTINGS.address),
+  lat: z.number().catch(DEFAULT_SETTINGS.lat),
+  lng: z.number().catch(DEFAULT_SETTINGS.lng),
+  menu: z
+    .array(z.object({ label: z.string(), href: z.string() }))
+    .catch(DEFAULT_SETTINGS.menu),
+});
+
 export async function loadSettings(): Promise<SiteSettings> {
   const rows = await db.select().from(settingsTable).where(eq(settingsTable.key, 'site')).limit(1);
   const stored = rows[0]?.value;
   if (!stored || typeof stored !== 'object') return DEFAULT_SETTINGS;
-  /* Настройки правит владелец, поэтому неизвестные или битые поля просто
-     перекрываются дефолтами, а не роняют весь сайт. */
-  return { ...DEFAULT_SETTINGS, ...(stored as Partial<SiteSettings>) };
+
+  const parsed = settingsSchema.safeParse({ ...DEFAULT_SETTINGS, ...stored });
+  return parsed.success ? parsed.data : DEFAULT_SETTINGS;
 }

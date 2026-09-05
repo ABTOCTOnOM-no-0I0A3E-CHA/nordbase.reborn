@@ -28,31 +28,31 @@ export async function moveRow(
   const neighbour = rows[target];
   if (!current || !neighbour) return;
 
-  /* Если sort совпадает (например, всё нулевое после импорта), простой обмен
-     ничего не изменит — раскладываем позиции заново по текущему порядку. */
-  if (current.sort === neighbour.sort) {
-    const reordered = [...rows];
-    reordered[index] = neighbour;
-    reordered[target] = current;
-    await Promise.all(
-      reordered.map((row, i) =>
-        db
+  /* Всё в одной транзакции: частичный сбой оставил бы две строки с одинаковым
+     sort, и порядок в списке стал бы недетерминированным. */
+  await db.transaction(async (tx) => {
+    /* Если sort совпадает (например, всё нулевое после импорта), простой обмен
+       ничего не изменит — раскладываем позиции заново по текущему порядку. */
+    if (current.sort === neighbour.sort) {
+      const reordered = [...rows];
+      reordered[index] = neighbour;
+      reordered[target] = current;
+      for (const [i, row] of reordered.entries()) {
+        await tx
           .update(table)
           .set({ [sortColumn.name]: i } as Record<string, number>)
-          .where(eq(idColumn, row.id)),
-      ),
-    );
-    return;
-  }
+          .where(eq(idColumn, row.id));
+      }
+      return;
+    }
 
-  await Promise.all([
-    db
+    await tx
       .update(table)
       .set({ [sortColumn.name]: neighbour.sort } as Record<string, number>)
-      .where(eq(idColumn, current.id)),
-    db
+      .where(eq(idColumn, current.id));
+    await tx
       .update(table)
       .set({ [sortColumn.name]: current.sort } as Record<string, number>)
-      .where(eq(idColumn, neighbour.id)),
-  ]);
+      .where(eq(idColumn, neighbour.id));
+  });
 }

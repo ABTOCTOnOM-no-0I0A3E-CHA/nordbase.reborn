@@ -28,6 +28,9 @@ export default async function SettingsPage() {
 
       <Panel>
         <form action={saveSettings} className="grid gap-4 sm:grid-cols-2">
+          {/* Менеджеру форма показывается только для чтения: раньше нажатие
+              приводило к странице ошибки от requireOwner. */}
+          <fieldset disabled={!isOwner} className="contents">
           <Field label="Телефон">
             <Input name="phone" defaultValue={settings.phone} />
           </Field>
@@ -61,6 +64,7 @@ export default async function SettingsPage() {
           <div className="sm:col-span-2">
             <Submit>Сохранить настройки</Submit>
           </div>
+          </fieldset>
         </form>
       </Panel>
     </div>

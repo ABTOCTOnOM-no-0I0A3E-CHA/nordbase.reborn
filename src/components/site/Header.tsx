@@ -3,8 +3,15 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import type { SiteSettings } from '@/lib/site-data';
+import { safeHref } from '@/lib/safe-href';
 
-export function Header({ menu }: { menu: SiteSettings['menu'] }) {
+export function Header({ menu: rawMenu }: { menu: SiteSettings['menu'] }) {
+  /* Пункты вводит владелец; ссылку с неожиданной схемой просто не показываем. */
+  const menu = rawMenu.flatMap((item) => {
+    const href = safeHref(item.href);
+    return href ? [{ label: item.label, href }] : [];
+  });
+
   const [solid, setSolid] = useState(false);
   const [open, setOpen] = useState(false);
 

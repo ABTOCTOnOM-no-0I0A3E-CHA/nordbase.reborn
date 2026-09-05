@@ -11,13 +11,13 @@ const field =
   'w-full rounded-[10px] border border-line-2 bg-bg-3 px-3 py-3 text-[15px] text-ink focus:border-transparent focus:outline-2 focus:outline-aurora';
 const label = 'mb-2 block text-[12.5px] font-semibold text-ink-3';
 
-/* Перечень дат между заездом и выездом включительно. */
-function rangeDates(from: string, to: string): string[] {
-  if (!from || !to || to < from) return [];
+/* Ночи между заездом и выездом: день выезда домик уже не занимает. */
+function nights(from: string, to: string): string[] {
+  if (!from || !to || to <= from) return [];
   const out: string[] = [];
   const cursor = new Date(`${from}T00:00:00Z`);
   const end = new Date(`${to}T00:00:00Z`);
-  while (cursor <= end) {
+  while (cursor < end) {
     out.push(cursor.toISOString().slice(0, 10));
     cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
@@ -28,10 +28,14 @@ export function RequestForm({
   houses,
   tours,
   busyByHouse = {},
+  today,
 }: {
   houses: Pick<HouseRecord, 'id' | 'title'>[];
   tours: Pick<TourRecord, 'id' | 'title'>[];
   busyByHouse?: Record<string, string[]>;
+  /* «Сегодня» считает сервер по часовому поясу базы: у гостя в браузере
+     может стоять любая зона, и минимальная дата уехала бы на сутки. */
+  today: string;
 }) {
   const [state, formAction, pending] = useActionState(submitRequest, initial);
   const [guests, setGuests] = useState(2);
@@ -42,8 +46,7 @@ export function RequestForm({
   /* Предупреждаем сразу, а не после отправки: занятые даты видны гостю,
      и он не тратит время на заявку, которую всё равно придётся переносить. */
   const busy = houseId ? (busyByHouse[houseId] ?? []) : [];
-  const clash = rangeDates(dateFrom, dateTo).filter((date) => busy.includes(date));
-  const today = new Date().toISOString().slice(0, 10);
+  const clash = nights(dateFrom, dateTo).filter((date) => busy.includes(date));
 
   if (state.ok) {
     return (

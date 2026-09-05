@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { eq, sql } from 'drizzle-orm';
+import { desc, eq, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '@/db';
 import { houses, pages, pageVersions, seasons, tourDays, tourStops, tours } from '@/db/schema';
@@ -13,6 +13,35 @@ import { moveRow } from './reorder';
 function refresh() {
   revalidatePath('/', 'layout');
 }
+
+
+export type FormState = { error?: string };
+
+/* Разбираем отказ так, чтобы владелец увидел причину, а не страницу 500.
+   23505 — нарушение уникальности; единственный такой индекс здесь — на адресе. */
+function toFormState(cause: unknown): FormState {
+  const code = typeof cause === 'object' && cause !== null && 'code' in cause ? String((cause as { code: unknown }).code) : '';
+  if (code === '23505') return { error: 'Такой адрес уже занят — придумайте другой' };
+  if (cause instanceof z.ZodError) {
+    return { error: cause.issues[0]?.message ?? 'Проверьте заполнение полей' };
+  }
+  throw cause;
+}
+
+/* redirect и notFound работают через исключение — его нельзя перехватывать. */
+function isControlFlow(cause: unknown): boolean {
+  return (
+    typeof cause === 'object' &&
+    cause !== null &&
+    'digest' in cause &&
+    typeof (cause as { digest: unknown }).digest === 'string' &&
+    ((cause as { digest: string }).digest.startsWith('NEXT_REDIRECT') ||
+      (cause as { digest: string }).digest === 'NEXT_NOT_FOUND')
+  );
+}
+
+/* Сколько версий страницы храним. Редактор показывает 10. */
+const KEEP_VERSIONS = 20;
 
 /* Пустой slug — это главная. Остальные пути: латиница, цифры, дефис и слэш. */
 const slugSchema = z
@@ -60,8 +89,17 @@ const pageSchema = z.object({
   status: statusSchema,
 });
 
-export async function savePage(formData: FormData): Promise<void> {
+export async function savePage(_prev: FormState, formData: FormData): Promise<FormState> {
   await requireUser();
+  try {
+    return await savePageInner(formData);
+  } catch (cause) {
+    if (isControlFlow(cause)) throw cause;
+    return toFormState(cause);
+  }
+}
+
+async function savePageInner(formData: FormData): Promise<FormState> {
   const input = pageSchema.parse(Object.fromEntries(formData));
 
   const values = {
@@ -71,21 +109,40 @@ export async function savePage(formData: FormData): Promise<void> {
     seoDescription: input.seoDescription || null,
     status: input.status,
     updatedAt: new Date(),
-    publishedAt: input.status === 'published' ? new Date() : null,
   };
 
   if (input.id) {
-    await db.update(pages).set(values).where(eq(pages.id, input.id));
+    const [current] = await db
+      .select({ publishedAt: pages.publishedAt })
+      .from(pages)
+      .where(eq(pages.id, input.id))
+      .limit(1);
+
+    /* Дата публикации ставится один раз. Правка заголовка не должна её
+       переставлять, а возврат в черновик — стирать: иначе история врёт. */
+    await db
+      .update(pages)
+      .set({
+        ...values,
+        publishedAt:
+          current?.publishedAt ?? (input.status === 'published' ? new Date() : null),
+      })
+      .where(eq(pages.id, input.id));
     refresh();
-    return;
+    return {};
   }
 
   const [created] = await db
     .insert(pages)
-    .values({ ...values, body: [] })
+    .values({
+      ...values,
+      body: [],
+      publishedAt: input.status === 'published' ? new Date() : null,
+    })
     .returning({ id: pages.id });
   refresh();
   if (created) redirect(`/admin/pages/${created.id}`);
+  return {};
 }
 
 export async function deletePage(formData: FormData): Promise<void> {
@@ -96,8 +153,11 @@ export async function deletePage(formData: FormData): Promise<void> {
 }
 
 /* Перед записью кладём снимок прежнего тела — это и есть откат на прошлую версию. */
-export async function savePageBlocks(id: string, json: string): Promise<void> {
+export async function savePageBlocks(rawId: string, json: string): Promise<void> {
   const user = await requireUser();
+  /* id приходит из адреса страницы — проверяем, иначе Postgres
+     ответит ошибкой синтаксиса uuid вместо понятного отказа. */
+  const id = z.uuid().parse(rawId);
   const blocks = blocksSchema.parse(JSON.parse(json));
 
   const rows = await db.select({ body: pages.body }).from(pages).where(eq(pages.id, id)).limit(1);
@@ -107,6 +167,24 @@ export async function savePageBlocks(id: string, json: string): Promise<void> {
       snapshot: rows[0].body,
       authorId: user.id,
     });
+
+    /* Держим только последние KEEP_VERSIONS снимков: редактор всё равно
+       показывает десяток, а тело страницы с галереей весит немало. */
+    const stale = await db
+      .select({ id: pageVersions.id })
+      .from(pageVersions)
+      .where(eq(pageVersions.pageId, id))
+      .orderBy(desc(pageVersions.createdAt))
+      .offset(KEEP_VERSIONS);
+
+    if (stale.length > 0) {
+      await db.delete(pageVersions).where(
+        inArray(
+          pageVersions.id,
+          stale.map((row) => row.id),
+        ),
+      );
+    }
   }
 
   await db.update(pages).set({ body: blocks, updatedAt: new Date() }).where(eq(pages.id, id));
@@ -147,8 +225,17 @@ const houseSchema = z.object({
   status: statusSchema,
 });
 
-export async function saveHouse(formData: FormData): Promise<void> {
+export async function saveHouse(_prev: FormState, formData: FormData): Promise<FormState> {
   await requireUser();
+  try {
+    return await saveHouseInner(formData);
+  } catch (cause) {
+    if (isControlFlow(cause)) throw cause;
+    return toFormState(cause);
+  }
+}
+
+async function saveHouseInner(formData: FormData): Promise<FormState> {
   const input = houseSchema.parse(Object.fromEntries(formData));
   const values = {
     slug: input.slug,
@@ -164,7 +251,7 @@ export async function saveHouse(formData: FormData): Promise<void> {
   if (input.id) {
     await db.update(houses).set(values).where(eq(houses.id, input.id));
     refresh();
-    return;
+    return {};
   }
 
   const [row] = await db
@@ -176,10 +263,14 @@ export async function saveHouse(formData: FormData): Promise<void> {
     .returning({ id: houses.id });
   refresh();
   if (created) redirect(`/admin/houses/${created.id}`);
+  return {};
 }
 
-export async function saveHouseBlocks(id: string, json: string): Promise<void> {
+export async function saveHouseBlocks(rawId: string, json: string): Promise<void> {
   await requireUser();
+  /* id приходит из адреса страницы — проверяем, иначе Postgres
+     ответит ошибкой синтаксиса uuid вместо понятного отказа. */
+  const id = z.uuid().parse(rawId);
   const blocks = blocksSchema.parse(JSON.parse(json));
   await db.update(houses).set({ body: blocks }).where(eq(houses.id, id));
   refresh();
@@ -213,8 +304,17 @@ const tourSchema = z.object({
   status: statusSchema,
 });
 
-export async function saveTour(formData: FormData): Promise<void> {
+export async function saveTour(_prev: FormState, formData: FormData): Promise<FormState> {
   await requireUser();
+  try {
+    return await saveTourInner(formData);
+  } catch (cause) {
+    if (isControlFlow(cause)) throw cause;
+    return toFormState(cause);
+  }
+}
+
+async function saveTourInner(formData: FormData): Promise<FormState> {
   const input = tourSchema.parse(Object.fromEntries(formData));
   const values = {
     slug: input.slug,
@@ -230,7 +330,7 @@ export async function saveTour(formData: FormData): Promise<void> {
   if (input.id) {
     await db.update(tours).set(values).where(eq(tours.id, input.id));
     refresh();
-    return;
+    return {};
   }
 
   const [row] = await db.select({ max: sql<number | null>`max(${tours.sort})` }).from(tours);
@@ -240,10 +340,14 @@ export async function saveTour(formData: FormData): Promise<void> {
     .returning({ id: tours.id });
   refresh();
   if (created) redirect(`/admin/tours/${created.id}`);
+  return {};
 }
 
-export async function saveTourBlocks(id: string, json: string): Promise<void> {
+export async function saveTourBlocks(rawId: string, json: string): Promise<void> {
   await requireUser();
+  /* id приходит из адреса страницы — проверяем, иначе Postgres
+     ответит ошибкой синтаксиса uuid вместо понятного отказа. */
+  const id = z.uuid().parse(rawId);
   const blocks = blocksSchema.parse(JSON.parse(json));
   await db.update(tours).set({ body: blocks }).where(eq(tours.id, id));
   refresh();
@@ -259,8 +363,11 @@ const programSchema = z.array(
 /* Программу переписываем целиком: дней и точек единицы, а сравнивать построчно
    ради экономии пары запросов — лишняя сложность и лишний источник ошибок.
    Всё в одной транзакции, чтобы тур не остался без программы при сбое. */
-export async function saveTourProgram(id: string, json: string): Promise<void> {
+export async function saveTourProgram(rawId: string, json: string): Promise<void> {
   await requireUser();
+  /* id приходит из адреса страницы — проверяем, иначе Postgres
+     ответит ошибкой синтаксиса uuid вместо понятного отказа. */
+  const id = z.uuid().parse(rawId);
   const program = programSchema.parse(JSON.parse(json));
 
   await db.transaction(async (tx) => {
@@ -320,8 +427,17 @@ const seasonSchema = z.object({
   status: statusSchema,
 });
 
-export async function saveSeason(formData: FormData): Promise<void> {
+export async function saveSeason(_prev: FormState, formData: FormData): Promise<FormState> {
   await requireUser();
+  try {
+    return await saveSeasonInner(formData);
+  } catch (cause) {
+    if (isControlFlow(cause)) throw cause;
+    return toFormState(cause);
+  }
+}
+
+async function saveSeasonInner(formData: FormData): Promise<FormState> {
   const input = seasonSchema.parse(Object.fromEntries(formData));
   const values = {
     slug: input.slug,
@@ -334,7 +450,7 @@ export async function saveSeason(formData: FormData): Promise<void> {
   if (input.id) {
     await db.update(seasons).set(values).where(eq(seasons.id, input.id));
     refresh();
-    return;
+    return {};
   }
 
   const [row] = await db.select({ max: sql<number | null>`max(${seasons.sort})` }).from(seasons);
@@ -344,10 +460,14 @@ export async function saveSeason(formData: FormData): Promise<void> {
     .returning({ id: seasons.id });
   refresh();
   if (created) redirect(`/admin/seasons/${created.id}`);
+  return {};
 }
 
-export async function saveSeasonBlocks(id: string, json: string): Promise<void> {
+export async function saveSeasonBlocks(rawId: string, json: string): Promise<void> {
   await requireUser();
+  /* id приходит из адреса страницы — проверяем, иначе Postgres
+     ответит ошибкой синтаксиса uuid вместо понятного отказа. */
+  const id = z.uuid().parse(rawId);
   const blocks = blocksSchema.parse(JSON.parse(json));
   await db.update(seasons).set({ body: blocks }).where(eq(seasons.id, id));
   refresh();

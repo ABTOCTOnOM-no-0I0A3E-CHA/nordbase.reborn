@@ -1,0 +1,25 @@
+# Без этого в контекст сборки уезжает гигабайт node_modules и .next,
+# а docker спотыкается на файлах с нестандартными правами внутри .next/dev.
+node_modules
+.next
+out
+build
+
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+
+handoff
+concept.v2.html
+public/uploads
+
+Dockerfile
+.dockerignore
+docker-compose*.yml
+Caddyfile
+.claude
+
+npm-debug.log*
+*.log

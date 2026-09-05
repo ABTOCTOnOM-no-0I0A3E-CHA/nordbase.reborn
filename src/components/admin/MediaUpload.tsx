@@ -14,7 +14,10 @@ export function MediaUpload() {
       action={formAction}
       className="border-line-2 mb-7 grid gap-4 rounded-[14px] border border-dashed p-5 md:grid-cols-[1fr_1fr_auto] md:items-end"
     >
-      <Field label="Файлы" hint="JPEG, PNG, WebP, HEIC. До 20 МБ каждый, можно выбрать несколько.">
+      <Field
+        label="Файлы"
+        hint="JPEG, PNG, WebP, HEIC. До 20 МБ каждый; за один раз — не больше 30 МБ суммарно, тяжёлые снимки грузите партиями."
+      >
         <input
           type="file"
           name="files"

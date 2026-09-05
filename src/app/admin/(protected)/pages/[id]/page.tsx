@@ -4,6 +4,7 @@ import { desc, eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { pages, pageVersions } from '@/db/schema';
 import { parseBlocks } from '@/lib/blocks';
+import { isUuid } from '@/lib/uuid';
 import { loadMediaOptions } from '@/lib/admin/media-options';
 import { deletePage, restorePageVersion, savePage, savePageBlocks } from '@/lib/admin/content-actions';
 import {
@@ -17,11 +18,15 @@ import {
   Textarea,
 } from '@/components/admin/ui';
 import { BlockEditor } from '@/components/admin/BlockEditor';
+import { EntityForm } from '@/components/admin/EntityForm';
 
 export const metadata = { title: 'Страница' };
 
 export default async function EditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  /* Устаревшая закладка или опечатка в адресе не должна давать 500 от
+     Postgres — это обычная «страница не найдена». */
+  if (!isUuid(id)) notFound();
 
   const [rows, media, versions] = await Promise.all([
     db.select().from(pages).where(eq(pages.id, id)).limit(1),
@@ -54,13 +59,13 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
       />
 
       <Panel className="mb-6">
-        <form action={savePage} className="grid gap-4 sm:grid-cols-2">
+        <EntityForm action={savePage} submitLabel="Сохранить настройки">
           <input type="hidden" name="id" value={page.id} />
           <Field label="Название">
-            <Input name="title" defaultValue={page.title} required />
+            <Input name="title" defaultValue={page.title} required maxLength={200} />
           </Field>
           <Field label="Адрес на сайте" hint="Пустое поле — главная страница">
-            <Input name="slug" defaultValue={page.slug} />
+            <Input name="slug" defaultValue={page.slug} pattern="[a-z0-9\-/]*" maxLength={160} />
           </Field>
           <Field label="Заголовок для поиска">
             <Input name="seoTitle" defaultValue={page.seoTitle ?? ''} />
@@ -76,10 +81,7 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
               <Textarea name="seoDescription" rows={2} defaultValue={page.seoDescription ?? ''} />
             </Field>
           </div>
-          <div className="flex items-center gap-3 sm:col-span-2">
-            <Submit>Сохранить настройки</Submit>
-          </div>
-        </form>
+        </EntityForm>
       </Panel>
 
       <h2 className="mb-3 text-[17px] font-bold tracking-tight">Блоки страницы</h2>

@@ -2,9 +2,11 @@ import Link from 'next/link';
 import type { Block } from '@/lib/blocks';
 import { loadRequestFormOptions, type BlockData } from '@/lib/site-data';
 import { loadBusyDates } from '@/lib/occupancy';
+import { todayIso } from '@/lib/dates';
 import { Aurora } from '@/components/site/Aurora';
 import { Btn, Card, Eyebrow, Prose, Section, SectionHead, Wrap } from '@/components/site/ui';
 import { Picture } from './Picture';
+import { safeHref } from '@/lib/safe-href';
 import { RequestForm } from '@/components/site/RequestForm';
 import { Faq } from '@/components/site/Faq';
 import { MapWidget } from '@/components/site/MapWidget';
@@ -61,10 +63,10 @@ function Hero({ block, data }: { block: Extract<Block, { type: 'hero' }>; data: 
           {block.primaryLabel || block.secondaryLabel ? (
             <div className="mb-11 flex flex-wrap gap-3">
               {block.primaryLabel ? (
-                <Btn href={block.primaryHref || '#request'}>{block.primaryLabel}</Btn>
+                <Btn href={safeHref(block.primaryHref) ?? '#request'}>{block.primaryLabel}</Btn>
               ) : null}
               {block.secondaryLabel ? (
-                <Btn href={block.secondaryHref || '#'} variant="outline">
+                <Btn href={safeHref(block.secondaryHref) ?? '#'} variant="outline">
                   {block.secondaryLabel}
                 </Btn>
               ) : null}
@@ -73,7 +75,7 @@ function Hero({ block, data }: { block: Extract<Block, { type: 'hero' }>; data: 
 
           {block.cards.length > 0 ? (
             <div className="grid gap-3 sm:gap-4 md:grid-cols-3">
-              {block.cards.map((card, i) => {
+              {block.cards.filter((card) => card.title || card.text).map((card, i) => {
                 const inner = (
                   <>
                     <b className="mb-2 flex items-center gap-2.5 text-[16px] font-semibold">
@@ -87,8 +89,9 @@ function Hero({ block, data }: { block: Extract<Block, { type: 'hero' }>; data: 
                 );
                 const cls =
                   'bg-bg-2/70 border-line hover:border-line-2 block rounded-[14px] border px-5 py-4 backdrop-blur-[10px] transition hover:-translate-y-[3px]';
-                return card.href ? (
-                  <Link key={i} href={card.href} className={cls}>
+                const href = safeHref(card.href);
+                return href ? (
+                  <Link key={i} href={href} className={cls}>
                     {inner}
                   </Link>
                 ) : (
@@ -165,17 +168,18 @@ function Cards({ block }: { block: Extract<Block, { type: 'cards' }> }) {
     <>
       <SectionHead eyebrow={block.eyebrow} title={block.title} subtitle={block.subtitle} />
       <div className={`grid gap-4 ${cols}`}>
-        {block.items.map((item, i) => {
+        {block.items.filter((item) => item.title || item.text).map((item, i) => {
           const inner = (
             <>
               <b className="mb-2 block text-[16px] font-semibold">{item.title}</b>
               <p className="text-ink-2 text-[14px]">{item.text}</p>
             </>
           );
-          return item.href ? (
+          const href = safeHref(item.href);
+          return href ? (
             <Link
               key={i}
-              href={item.href}
+              href={href}
               className="bg-bg-3 border-line hover:border-line-2 rounded-[14px] border p-5 transition"
             >
               {inner}
@@ -196,7 +200,7 @@ function Facts({ block }: { block: Extract<Block, { type: 'facts' }> }) {
     <>
       <SectionHead eyebrow={block.eyebrow} title={block.title} subtitle={block.subtitle} />
       <div className="border-line grid gap-px border-t sm:grid-cols-2 lg:grid-cols-4">
-        {block.items.map((item, i) => (
+        {block.items.filter((item) => item.value || item.label).map((item, i) => (
           <div key={i} className="border-line py-5 pr-6 sm:border-r last:sm:border-r-0">
             <b className="block text-[20px] font-semibold">{item.value}</b>
             <span className="text-ink-3 text-[13.5px]">{item.label}</span>
@@ -232,7 +236,7 @@ function Cta({ block }: { block: Extract<Block, { type: 'cta' }> }) {
         {block.title ? <h2 className="text-2xl font-bold tracking-tight">{block.title}</h2> : null}
         {block.subtitle ? <p className="text-ink-2 mt-2 max-w-[52ch]">{block.subtitle}</p> : null}
       </div>
-      {block.label ? <Btn href={block.href || '#request'}>{block.label}</Btn> : null}
+      {block.label ? <Btn href={safeHref(block.href) ?? '#request'}>{block.label}</Btn> : null}
     </Card>
   );
 }
@@ -412,7 +416,7 @@ async function RequestFormSection({
   return (
     <>
       <SectionHead eyebrow={block.eyebrow} title={block.title} subtitle={block.subtitle} />
-      <RequestForm houses={houses} tours={tours} busyByHouse={busyByHouse} />
+      <RequestForm houses={houses} tours={tours} busyByHouse={busyByHouse} today={todayIso()} />
     </>
   );
 }

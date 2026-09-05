@@ -1,5 +1,6 @@
-import { AdminHeading, Field, Input, Panel, Select, Submit, Textarea } from '@/components/admin/ui';
+import { AdminHeading, Field, Input, Panel, Select, Textarea } from '@/components/admin/ui';
 import { savePage } from '@/lib/admin/content-actions';
+import { EntityForm } from '@/components/admin/EntityForm';
 
 export const metadata = { title: 'Новая страница' };
 
@@ -11,16 +12,16 @@ export default function NewPage() {
         description="Создайте страницу, а блоки добавите на следующем шаге."
       />
       <Panel>
-        <form action={savePage} className="grid gap-4">
+        <EntityForm action={savePage} submitLabel="Создать">
           <input type="hidden" name="id" value="" />
-          <Field label="Название">
-            <Input name="title" required placeholder="Отзывы гостей" />
-          </Field>
+          <div className="sm:col-span-2"><Field label="Название">
+            <Input name="title" required maxLength={200} placeholder="Отзывы гостей" />
+          </Field></div>
           <Field
             label="Адрес на сайте"
             hint="Без ведущего слэша. Пустое поле — главная страница. Пример: otzyvy или rybachiy/banya"
           >
-            <Input name="slug" placeholder="otzyvy" />
+            <Input name="slug" placeholder="otzyvy" pattern="[a-z0-9\-/]*" maxLength={160} />
           </Field>
           <Field label="Заголовок для поиска" hint="Если пусто — берётся название.">
             <Input name="seoTitle" />
@@ -34,10 +35,7 @@ export default function NewPage() {
               <option value="published">Опубликована</option>
             </Select>
           </Field>
-          <div>
-            <Submit>Создать</Submit>
-          </div>
-        </form>
+        </EntityForm>
       </Panel>
     </div>
   );

@@ -5,6 +5,8 @@ const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   DATABASE_URL: z.string().min(1),
   SESSION_COOKIE_NAME: z.string().min(1).default('nb_session'),
+  /* Абсолютный адрес сайта для sitemap, robots и разметки JSON-LD. */
+  SITE_URL: z.url().default('http://localhost:3000'),
 
   TELEGRAM_BOT_TOKEN: z.string().optional(),
   TELEGRAM_CHAT_ID: z.string().optional(),

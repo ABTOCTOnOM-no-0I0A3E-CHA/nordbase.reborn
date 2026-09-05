@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { db } from '@/db';
 import { houses, requests, tours } from '@/db/schema';
 import { formatRequest, sendTelegram } from './telegram';
+import { allow, clientKey } from './throttle';
 
 /* Телефон принимаем в любом виде — гость пишет как привык, нормализуем сами. */
 const phone = z
@@ -39,6 +40,12 @@ export async function submitRequest(
   _prev: RequestState,
   formData: FormData,
 ): Promise<RequestState> {
+  /* Форма открыта всем: без ограничения скрипт зальёт таблицу заявок
+     и завалит владельца уведомлениями в Telegram. */
+  if (!allow(await clientKey('request'), 5, 10 * 60 * 1000)) {
+    return { ok: false, error: 'Слишком много заявок подряд. Попробуйте через несколько минут.' };
+  }
+
   const parsed = schema.safeParse(Object.fromEntries(formData));
 
   if (!parsed.success) {

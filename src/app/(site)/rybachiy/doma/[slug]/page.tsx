@@ -4,10 +4,10 @@ import { and, asc, eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { houseMedia, houses, media } from '@/db/schema';
 import { parseBlocks } from '@/lib/blocks';
-import { loadBlockData } from '@/lib/site-data';
+import { loadBlockData, parseMeta } from '@/lib/site-data';
 import { BlockList } from '@/components/blocks/render';
 import { Picture } from '@/components/blocks/Picture';
-import { Btn, Card, Eyebrow, Section, Wrap } from '@/components/site/ui';
+import { Btn, Card, Eyebrow, Section } from '@/components/site/ui';
 
 type Params = { slug: string };
 
@@ -49,9 +49,16 @@ export default async function HousePage({ params }: { params: Promise<Params> })
     Promise.resolve(parseBlocks(house.body)),
   ]);
 
-  const cover = gallery[0]?.media;
   const data = await loadBlockData(blocks);
   for (const row of gallery) data.media.set(row.media.id, row.media);
+
+  /* Обложка — то, что выбрано в админке; галерея лишь запасной вариант,
+     иначе у домика, заведённого руками, шапка оставалась пустой. */
+  if (house.coverId && !data.media.has(house.coverId)) {
+    const rows = await db.select().from(media).where(eq(media.id, house.coverId)).limit(1);
+    if (rows[0]) data.media.set(rows[0].id, rows[0]);
+  }
+  const cover = (house.coverId ? data.media.get(house.coverId) : undefined) ?? gallery[0]?.media;
 
   return (
     <>
@@ -89,7 +96,7 @@ export default async function HousePage({ params }: { params: Promise<Params> })
               </Card>
             ) : null}
             {/* Характеристики, которые владелец добавляет сам в админке */}
-            {house.meta.map((item, i) => (
+            {parseMeta(house.meta).map((item, i) => (
               <Card key={i} className="p-5">
                 <b className="block text-[15.5px]">{item.value}</b>
                 <span className="text-ink-3 text-[13.5px]">{item.label}</span>
@@ -102,15 +109,13 @@ export default async function HousePage({ params }: { params: Promise<Params> })
       <BlockList blocks={blocks} data={data} />
 
       <Section alt>
-        <Wrap>
-          <div className="text-center">
+        <div className="text-center">
             <h2 className="text-2xl font-bold tracking-tight">Свободны нужные даты?</h2>
             <p className="text-ink-2 mt-2">Оставьте заявку — проверим и перезвоним.</p>
             <div className="mt-5 flex justify-center">
               <Btn href="/#request">Оставить заявку</Btn>
-            </div>
           </div>
-        </Wrap>
+        </div>
       </Section>
     </>
   );

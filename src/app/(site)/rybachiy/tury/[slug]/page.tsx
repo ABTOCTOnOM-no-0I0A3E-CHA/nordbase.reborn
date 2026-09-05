@@ -4,7 +4,7 @@ import { and, asc, eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { tourDays, tourStops, tours } from '@/db/schema';
 import { parseBlocks } from '@/lib/blocks';
-import { loadBlockData } from '@/lib/site-data';
+import { loadBlockData, parseMeta } from '@/lib/site-data';
 import { BlockList } from '@/components/blocks/render';
 import { Btn, Card, Eyebrow, Section } from '@/components/site/ui';
 
@@ -73,9 +73,9 @@ export default async function TourPage({ params }: { params: Promise<Params> }) 
           </div>
           <p className="text-ink-2 mt-4 max-w-[60ch] text-[18px]">{tour.summary}</p>
 
-          {tour.meta.length > 0 ? (
+          {parseMeta(tour.meta).length > 0 ? (
             <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {tour.meta.map((item, i) => (
+              {parseMeta(tour.meta).map((item, i) => (
                 <Card key={i} className="p-5">
                   <b className="block text-[15.5px]">{item.value}</b>
                   <span className="text-ink-3 text-[13.5px]">{item.label}</span>

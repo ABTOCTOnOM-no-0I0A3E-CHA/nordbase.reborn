@@ -2,6 +2,7 @@ import { asc, eq, gte } from 'drizzle-orm';
 import { db } from '@/db';
 import { bookings, houses } from '@/db/schema';
 import { AdminHeading, ConfirmSubmit, Panel } from '@/components/admin/ui';
+import { occupiedDates, todayIso } from '@/lib/dates';
 import { BookingForm } from '@/components/admin/BookingForm';
 import { deleteBooking } from '@/lib/admin/request-actions';
 
@@ -33,7 +34,7 @@ function daysInMonth(year: number, month: number): number {
 }
 
 export default async function CalendarPage() {
-  const today = new Date();
+  const today = new Date(`${todayIso()}T00:00:00Z`);
   const startIso = isoDate(today.getUTCFullYear(), today.getUTCMonth(), 1);
 
   const [houseRows, bookingRows] = await Promise.all([
@@ -47,12 +48,8 @@ export default async function CalendarPage() {
   for (const booking of bookingRows) {
     if (booking.status === 'cancelled') continue;
     const set = busy.get(booking.houseId) ?? new Set<string>();
-    const cursor = new Date(`${booking.dateFrom}T00:00:00Z`);
-    const end = new Date(`${booking.dateTo}T00:00:00Z`);
-    while (cursor <= end) {
-      set.add(cursor.toISOString().slice(0, 10));
-      cursor.setUTCDate(cursor.getUTCDate() + 1);
-    }
+    /* Полуоткрытый интервал: день выезда уже свободен. */
+    for (const date of occupiedDates(booking.dateFrom, booking.dateTo)) set.add(date);
     busy.set(booking.houseId, set);
   }
 

@@ -65,7 +65,13 @@ function FieldControl({
           type="number"
           step="any"
           value={typeof value === 'number' ? String(value) : ''}
-          onChange={(e) => onChange(e.target.value === '' ? 0 : Number(e.target.value))}
+          onChange={(e) => {
+            /* Пустое поле и промежуточный ввод вроде «-» отдаём как undefined:
+               JSON.stringify выбросит ключ, и сработает значение по умолчанию
+               из схемы. Иначе в тело страницы уезжали 0 и null. */
+            const parsed = Number(e.target.value);
+            onChange(e.target.value === '' || !Number.isFinite(parsed) ? undefined : parsed);
+          }}
         />
       );
     case 'checkbox':
@@ -232,6 +238,7 @@ export function BlockEditor({
   const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
   const [pending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const update = (index: number, block: Block) =>
     setBlocks((prev) => prev.map((b, i) => (i === index ? block : b)));
@@ -366,9 +373,21 @@ export function BlockEditor({
           disabled={pending}
           onClick={() => {
             setSaved(false);
+            setError(null);
             startTransition(async () => {
-              await save(JSON.stringify(blocks));
-              setSaved(true);
+              /* Без catch любой отказ сервера — истёкшая сессия, отклонённая
+                 схема, обрыв связи — выглядел как «ничего не произошло»,
+                 и владелец терял правки, не понимая почему. */
+              try {
+                await save(JSON.stringify(blocks));
+                setSaved(true);
+              } catch (cause) {
+                setError(
+                  cause instanceof Error && cause.message
+                    ? cause.message
+                    : 'Не удалось сохранить. Проверьте связь и попробуйте ещё раз.',
+                );
+              }
             });
           }}
           className="bg-aurora text-aurora-ink hover:bg-aurora-hi cursor-pointer rounded-full px-5 py-2.5 text-[14px] font-semibold disabled:opacity-60"
@@ -386,6 +405,7 @@ export function BlockEditor({
           </a>
         ) : null}
         {saved && !pending ? <span className="text-aurora text-[13.5px]">Сохранено</span> : null}
+        {error ? <span className="text-busy text-[13.5px]">{error}</span> : null}
         <span className="text-ink-3 ml-auto text-[12.5px]">Блоков: {blocks.length}</span>
       </div>
     </div>

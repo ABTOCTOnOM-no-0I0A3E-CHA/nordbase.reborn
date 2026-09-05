@@ -34,7 +34,9 @@ async function nextSort(table: typeof prices | typeof faq | typeof reviews): Pro
 
 const priceSchema = z.object({
   id: z.union([z.uuid(), z.literal('')]).default(''),
-  group: text(40),
+  /* Пустая строка перекрыла бы default в БД, и строка молча исчезла бы
+     из прайса на сайте: блок «Цены» фильтрует по группе. */
+  group: text(40).transform((v) => v || 'base'),
   title: text(200).min(1, 'Название обязательно'),
   note: text(500).default(''),
   amount: optionalNumber,

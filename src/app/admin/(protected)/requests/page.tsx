@@ -2,7 +2,8 @@ import { desc, eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { houses, requests, tours } from '@/db/schema';
 import { AdminHeading, ConfirmSubmit, Panel, Select, Submit } from '@/components/admin/ui';
-import { bookFromRequest, deleteRequest, setRequestStatus } from '@/lib/admin/request-actions';
+import { deleteRequest, setRequestStatus } from '@/lib/admin/request-actions';
+import { BookFromRequest } from '@/components/admin/BookFromRequest';
 
 export const metadata = { title: 'Заявки' };
 
@@ -118,10 +119,7 @@ export default async function RequestsPage() {
                 </form>
 
                 {request.houseId && request.dateFrom && request.dateTo ? (
-                  <form action={bookFromRequest}>
-                    <input type="hidden" name="id" value={request.id} />
-                    <Submit>Занять даты</Submit>
-                  </form>
+                  <BookFromRequest requestId={request.id} />
                 ) : null}
 
                 <form action={deleteRequest} className="ml-auto">

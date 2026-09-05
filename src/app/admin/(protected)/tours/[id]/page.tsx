@@ -4,12 +4,14 @@ import { asc, eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { tourDays, tourStops, tours } from '@/db/schema';
 import { parseBlocks } from '@/lib/blocks';
+import { isUuid } from '@/lib/uuid';
 import { loadMediaOptions } from '@/lib/admin/media-options';
 import { saveTour, saveTourBlocks, saveTourProgram } from '@/lib/admin/content-actions';
-import { AdminHeading, Field, Input, Panel, Select, Submit, Textarea } from '@/components/admin/ui';
+import { AdminHeading, Field, Input, Panel, Select, Textarea } from '@/components/admin/ui';
 import { CoverField } from '@/components/admin/CoverField';
 import { MetaFields } from '@/components/admin/MetaFields';
 import { BlockEditor } from '@/components/admin/BlockEditor';
+import { EntityForm } from '@/components/admin/EntityForm';
 import { ProgramEditor, type ProgramDay } from '@/components/admin/ProgramEditor';
 
 export const metadata = { title: 'Тур' };
@@ -17,6 +19,8 @@ export const metadata = { title: 'Тур' };
 export default async function TourEditor({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const isNew = id === 'new';
+  /* Опечатка в адресе — это «не найдено», а не ошибка синтаксиса uuid. */
+  if (!isNew && !isUuid(id)) notFound();
 
   const [rows, media, programRows] = await Promise.all([
     isNew ? [] : db.select().from(tours).where(eq(tours.id, id)).limit(1),
@@ -39,14 +43,18 @@ export default async function TourEditor({ params }: { params: Promise<{ id: str
   const tour = rows[0];
   if (!isNew && !tour) notFound();
 
-  const program: ProgramDay[] = [];
+  /* Собираем по dayNo через Map: при разрыве в нумерации (1, 3) массив по
+     индексу дал бы дырку, которая после JSON.stringify превращается в null
+     и роняет сохранение программы. */
+  const byDay = new Map<number, ProgramDay>();
   for (const row of programRows) {
-    const index = row.dayNo - 1;
-    program[index] ??= { title: row.dayTitle, stops: [] };
-    if (row.stopTitle) {
-      program[index]!.stops.push({ title: row.stopTitle, isFinish: row.isFinish ?? false });
-    }
+    const day = byDay.get(row.dayNo) ?? { title: row.dayTitle, stops: [] };
+    if (row.stopTitle) day.stops.push({ title: row.stopTitle, isFinish: row.isFinish ?? false });
+    byDay.set(row.dayNo, day);
   }
+  const program: ProgramDay[] = [...byDay.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([, day]) => day);
 
   return (
     <div className="max-w-5xl">
@@ -61,14 +69,17 @@ export default async function TourEditor({ params }: { params: Promise<{ id: str
       />
 
       <Panel className="mb-6">
-        <form action={saveTour} className="grid gap-4 sm:grid-cols-2">
+        <EntityForm
+          action={saveTour}
+          submitLabel={tour ? 'Сохранить' : 'Создать тур'}
+        >
           <input type="hidden" name="id" value={tour?.id ?? ''} />
 
           <Field label="Название">
             <Input name="title" defaultValue={tour?.title ?? ''} required />
           </Field>
           <Field label="Адрес" hint="Латиницей">
-            <Input name="slug" defaultValue={tour?.slug ?? ''} required placeholder="chetyrehdnevnyy" />
+            <Input name="slug" pattern="[a-z0-9][a-z0-9\-]*" maxLength={120} defaultValue={tour?.slug ?? ''} required placeholder="chetyrehdnevnyy" />
           </Field>
 
           <div className="sm:col-span-2">
@@ -78,7 +89,7 @@ export default async function TourEditor({ params }: { params: Promise<{ id: str
           </div>
 
           <Field label="Дней">
-            <Input name="days" type="number" min={1} defaultValue={tour?.days ?? 2} required />
+            <Input name="days" type="number" min={1} max={30} defaultValue={tour?.days ?? 2} required />
           </Field>
           <Field label="Цена, ₽" hint="Пусто — цена не показывается">
             <Input name="price" type="number" min={0} defaultValue={tour?.price ?? ''} />
@@ -103,10 +114,7 @@ export default async function TourEditor({ params }: { params: Promise<{ id: str
             </Field>
           </div>
 
-          <div className="sm:col-span-2">
-            <Submit>{tour ? 'Сохранить' : 'Создать тур'}</Submit>
-          </div>
-        </form>
+        </EntityForm>
       </Panel>
 
       {tour ? (

@@ -1,5 +1,5 @@
 import 'server-only';
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { cookies } from 'next/headers';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
@@ -81,9 +81,3 @@ export async function destroySession(): Promise<void> {
   store.delete(env.SESSION_COOKIE_NAME);
 }
 
-/* Сравнение секретов постоянного времени — для мест, где сравниваем токены вручную. */
-export function safeEqual(a: string, b: string): boolean {
-  const bufA = Buffer.from(a);
-  const bufB = Buffer.from(b);
-  return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
-}

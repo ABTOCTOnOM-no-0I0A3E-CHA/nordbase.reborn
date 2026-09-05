@@ -7,6 +7,7 @@ import { db } from '@/db';
 import { users } from '@/db/schema';
 import { verifyPassword } from '@/lib/auth/password';
 import { createSession } from '@/lib/auth/session';
+import { allow, clientKey } from '@/lib/throttle';
 
 const schema = z.object({
   email: z.email(),
@@ -21,6 +22,12 @@ const DUMMY_HASH =
   '$argon2id$v=19$m=19456,t=2,p=1$c29tZS1zdGF0aWMtc2FsdA$1sVJHVJ7iMYIBoRDy0oQ0y3wPmZ0oNIrXK5Rr7C2xhE';
 
 export async function login(_prev: LoginState, formData: FormData): Promise<LoginState> {
+  /* Перебор пароля дорог не только для атакующего: каждая попытка — это
+     argon2id на 19 МиБ, то есть параллельный перебор ещё и кладёт сервер. */
+  if (!allow(await clientKey('login'), 10, 15 * 60 * 1000)) {
+    return { error: 'Слишком много попыток входа. Попробуйте через 15 минут.' };
+  }
+
   const parsed = schema.safeParse({
     email: formData.get('email'),
     password: formData.get('password'),

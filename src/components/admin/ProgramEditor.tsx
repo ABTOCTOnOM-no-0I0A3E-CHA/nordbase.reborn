@@ -18,6 +18,7 @@ export function ProgramEditor({
   const [days, setDays] = useState<ProgramDay[]>(initial);
   const [pending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const patchDay = (index: number, patch: Partial<ProgramDay>) =>
     setDays((prev) => prev.map((day, i) => (i === index ? { ...day, ...patch } : day)));
@@ -142,14 +143,23 @@ export function ProgramEditor({
           disabled={pending}
           onClick={() => {
             setSaved(false);
+            setError(null);
             startTransition(async () => {
               /* Пустые точки не сохраняем: пустая строка в маршруте — это опечатка. */
               const cleaned = days.map((day) => ({
                 ...day,
                 stops: day.stops.filter((stop) => stop.title.trim() !== ''),
               }));
-              await save(JSON.stringify(cleaned));
-              setSaved(true);
+              try {
+                await save(JSON.stringify(cleaned));
+                setSaved(true);
+              } catch (cause) {
+                setError(
+                  cause instanceof Error && cause.message
+                    ? cause.message
+                    : 'Не удалось сохранить программу.',
+                );
+              }
             });
           }}
           className="bg-aurora text-aurora-ink hover:bg-aurora-hi cursor-pointer rounded-full px-5 py-2.5 text-[14px] font-semibold disabled:opacity-60"
@@ -157,6 +167,7 @@ export function ProgramEditor({
           {pending ? 'Сохраняем…' : 'Сохранить программу'}
         </button>
         {saved && !pending ? <span className="text-aurora text-[13.5px]">Сохранено</span> : null}
+        {error ? <span className="text-busy text-[13.5px]">{error}</span> : null}
       </div>
     </div>
   );

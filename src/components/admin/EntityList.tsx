@@ -17,11 +17,14 @@ export function EntityList({
   basePath,
   move,
   remove,
+  removeWarning,
 }: {
   rows: EntityRow[];
   basePath: string;
   move: (formData: FormData) => Promise<void>;
   remove?: (formData: FormData) => Promise<void>;
+  /* Что ещё пропадёт вместе с записью — владелец должен знать до нажатия. */
+  removeWarning?: string;
 }) {
   return (
     <div className="grid gap-2">
@@ -72,7 +75,9 @@ export function EntityList({
           {remove ? (
             <form action={remove}>
               <input type="hidden" name="id" value={row.id} />
-              <ConfirmSubmit message={`Удалить «${row.title}»? Это действие нельзя отменить.`}>
+              <ConfirmSubmit
+                message={`Удалить «${row.title}»? ${removeWarning ?? ''} Это действие нельзя отменить.`}
+              >
                 Удалить
               </ConfirmSubmit>
             </form>

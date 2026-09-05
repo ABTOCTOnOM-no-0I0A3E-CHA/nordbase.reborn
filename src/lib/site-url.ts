@@ -1,5 +1,7 @@
+import { env } from '@/env';
+
 /* Абсолютный адрес сайта нужен sitemap, robots и разметке JSON-LD.
-   На проде задаётся через SITE_URL, локально — localhost. */
+   Значение проходит проверку в env.ts, здесь только убираем хвостовой слэш. */
 export function siteUrl(): string {
-  return (process.env.SITE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+  return env.SITE_URL.replace(/\/$/, '');
 }

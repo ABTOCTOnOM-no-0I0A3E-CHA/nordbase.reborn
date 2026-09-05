@@ -9,7 +9,6 @@ import { z } from 'zod';
    - связанные — тянут данные из справочников (houses, tours, prices, faq…).
      Клиент добавил домик — блок обновился сам, трогать страницу не нужно. */
 
-const nonEmpty = z.string().trim().min(1);
 const optionalText = z.string().trim().default('');
 const mediaId = z.uuid().nullable().default(null);
 
@@ -33,7 +32,7 @@ export const heroBlock = z.object({
   cards: z
     .array(
       z.object({
-        title: nonEmpty,
+        title: optionalText,
         text: optionalText,
         href: optionalText,
         accent: z.enum(['aurora', 'ice', 'violet', 'amber']).default('aurora'),
@@ -66,7 +65,7 @@ export const cardsBlock = z.object({
   items: z
     .array(
       z.object({
-        title: nonEmpty,
+        title: optionalText,
         text: optionalText,
         href: optionalText,
       }),
@@ -77,7 +76,7 @@ export const cardsBlock = z.object({
 export const factsBlock = z.object({
   type: z.literal('facts'),
   ...heading,
-  items: z.array(z.object({ value: nonEmpty, label: optionalText })).default([]),
+  items: z.array(z.object({ value: optionalText, label: optionalText })).default([]),
 });
 
 export const galleryBlock = z.object({
@@ -96,9 +95,9 @@ export const ctaBlock = z.object({
 export const mapBlock = z.object({
   type: z.literal('map'),
   ...heading,
-  lat: z.number().default(69.785748),
-  lng: z.number().default(32.102471),
-  zoom: z.number().int().min(1).max(19).default(10),
+  lat: z.number().catch(69.785748).default(69.785748),
+  lng: z.number().catch(32.102471).default(32.102471),
+  zoom: z.number().int().min(1).max(19).catch(10).default(10),
 });
 
 /* --- связанные со справочниками --- */
@@ -106,13 +105,13 @@ export const mapBlock = z.object({
 export const housesBlock = z.object({
   type: z.literal('houses'),
   ...heading,
-  limit: z.number().int().min(0).default(0) /* 0 — показывать все */,
+  limit: z.number().int().min(0).catch(0).default(0) /* 0 — показывать все */,
 });
 
 export const toursBlock = z.object({
   type: z.literal('tours'),
   ...heading,
-  limit: z.number().int().min(0).default(0),
+  limit: z.number().int().min(0).catch(0).default(0),
 });
 
 export const seasonsBlock = z.object({

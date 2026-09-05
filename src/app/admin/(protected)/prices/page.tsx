@@ -11,7 +11,15 @@ const columns: Column[] = [
   { name: 'title', label: 'Название', placeholder: 'Проживание' },
   { name: 'amount', label: 'Сумма, ₽', type: 'number', placeholder: 'пусто = по запросу' },
   { name: 'unit', label: 'Единица', placeholder: 'с человека в сутки' },
-  { name: 'group', label: 'Группа', placeholder: 'base или extra' },
+  {
+    name: 'group',
+    label: 'Группа',
+    type: 'select',
+    options: [
+      { value: 'base', label: 'Основной прайс' },
+      { value: 'extra', label: 'Дополнительно' },
+    ],
+  },
   { name: 'note', label: 'Пояснение', type: 'textarea', className: 'md:col-span-2' },
   { name: 'visible', label: 'Показывать на сайте', type: 'checkbox' },
 ];

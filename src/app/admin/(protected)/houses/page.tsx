@@ -28,6 +28,7 @@ export default async function HousesList() {
         basePath="/admin/houses"
         move={moveHouse}
         remove={deleteHouse}
+        removeWarning="Вместе с домиком удалятся все его брони и занятые даты."
       />
     </div>
   );

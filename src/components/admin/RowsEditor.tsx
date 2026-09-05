@@ -1,6 +1,6 @@
 'use client';
 
-import { ConfirmSubmit, Input, Submit, Textarea } from './ui';
+import { ConfirmSubmit, Input, Submit, Textarea, inputClass } from './ui';
 
 /* Один редактор на три плоских справочника: цены, вопросы, отзывы.
    Каждая строка — отдельная форма, поэтому всё работает без клиентского
@@ -9,9 +9,11 @@ import { ConfirmSubmit, Input, Submit, Textarea } from './ui';
 export type Column = {
   name: string;
   label: string;
-  type?: 'text' | 'textarea' | 'number' | 'checkbox';
+  type?: 'text' | 'textarea' | 'number' | 'checkbox' | 'select';
   placeholder?: string;
   className?: string;
+  /* Только для type: 'select' — список допустимых значений. */
+  options?: { value: string; label: string }[];
 };
 
 export type Row = { id: string; values: Record<string, string | number | boolean | null> };
@@ -30,6 +32,22 @@ function Cell({ column, value }: { column: Column; value: string | number | bool
         />
         {column.label}
       </label>
+    );
+  }
+
+  if (column.type === 'select') {
+    return (
+      <select
+        name={column.name}
+        defaultValue={value == null ? '' : String(value)}
+        className={inputClass}
+      >
+        {(column.options ?? []).map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
     );
   }
 

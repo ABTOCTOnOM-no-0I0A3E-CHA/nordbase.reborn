@@ -12,3 +12,6 @@ next-env.d.ts
 .DS_Store
 Thumbs.db
 *.log
+
+# загруженные медиафайлы — хранятся на диске сервера, не в репозитории
+/public/uploads/

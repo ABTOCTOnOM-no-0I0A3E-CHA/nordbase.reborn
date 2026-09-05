@@ -13,7 +13,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "user:create": "bun scripts/create-user.ts"
+    "user:create": "bun scripts/create-user.ts",
+    "db:seed": "bun scripts/seed.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "2.2.0",
@@ -23,6 +24,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "server-only": "^0.0.1",
+    "sharp": "^0.35.4",
     "zod": "4.5.4"
   },
   "devDependencies": {

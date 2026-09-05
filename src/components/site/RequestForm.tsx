@@ -29,10 +29,15 @@ export function RequestForm({
   tours,
   busyByHouse = {},
   today,
+  directions,
+  submitLabel,
 }: {
   houses: Pick<HouseRecord, 'id' | 'title'>[];
   tours: Pick<TourRecord, 'id' | 'title'>[];
   busyByHouse?: Record<string, string[]>;
+  /* Варианты «Куда едете» и надпись на кнопке правятся в настройках сайта. */
+  directions: string[];
+  submitLabel: string;
   /* «Сегодня» считает сервер по часовому поясу базы: у гостя в браузере
      может стоять любая зона, и минимальная дата уехала бы на сутки. */
   today: string;
@@ -66,10 +71,12 @@ export function RequestForm({
         <label className={label} htmlFor="direction">
           Куда едете
         </label>
-        <select id="direction" name="direction" className={field} defaultValue="Рыбачий">
-          <option value="Рыбачий">Полуостров Рыбачий</option>
-          <option value="Териберка">Териберка</option>
-          <option value="Ещё не решили">Ещё не решили</option>
+        <select id="direction" name="direction" className={field} defaultValue={directions[0] ?? ''}>
+          {directions.map((direction) => (
+            <option key={direction} value={direction}>
+              {direction}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -233,7 +240,7 @@ export function RequestForm({
           disabled={pending}
           className="bg-aurora text-aurora-ink hover:bg-aurora-hi cursor-pointer rounded-full px-7 py-3 font-semibold disabled:opacity-60"
         >
-          {pending ? 'Отправляем…' : 'Отправить заявку'}
+          {pending ? 'Отправляем…' : submitLabel}
         </button>
       </div>
     </form>

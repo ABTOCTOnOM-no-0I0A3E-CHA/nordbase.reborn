@@ -4,7 +4,7 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { media, seasons } from '@/db/schema';
 import { parseBlocks } from '@/lib/blocks';
-import { loadBlockData } from '@/lib/site-data';
+import { loadBlockData, loadSettings } from '@/lib/site-data';
 import { BlockList } from '@/components/blocks/render';
 import { Picture } from '@/components/blocks/Picture';
 import { Btn, Eyebrow, Section } from '@/components/site/ui';
@@ -36,7 +36,7 @@ export default async function SeasonPage({ params }: { params: Promise<Params> }
   if (!season) notFound();
 
   const blocks = parseBlocks(season.body);
-  const data = await loadBlockData(blocks);
+  const [data, settings] = await Promise.all([loadBlockData(blocks), loadSettings()]);
 
   /* Обложку сезона loadBlockData сам не подтянет — она не упомянута в блоках. */
   if (season.coverId && !data.media.has(season.coverId)) {
@@ -53,7 +53,7 @@ export default async function SeasonPage({ params }: { params: Promise<Params> }
             <h1 className="text-[clamp(30px,4.4vw,52px)] leading-[1.1] font-bold tracking-[-0.025em]">
               {season.title}
             </h1>
-            <Btn href="/#request">Оставить заявку</Btn>
+            <Btn href="/#request">{settings.ctaLabel}</Btn>
           </div>
           {season.coverId ? (
             <Picture

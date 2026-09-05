@@ -169,17 +169,40 @@ export async function loadRequestFormOptions(data: BlockData): Promise<{
 /* ------------------------------------------------------------ настройки */
 
 export type SiteSettings = {
+  /* Название в шапке. Отдельно от юридического — в шапке оно набрано латиницей. */
+  brandName: string;
+  /* Как база называется в текстах, подвале и разметке для поисковиков. */
+  legalName: string;
+  /* Заголовок и описание для страниц, у которых нет своих. */
+  seoTitle: string;
+  seoDescription: string;
+  /* Надпись на кнопке заявки — одна на весь сайт. */
+  ctaLabel: string;
   phone: string;
   telegram: string;
   whatsapp: string;
   vk: string;
+  /* Ссылка на отзывы во внешнем сервисе (Яндекс.Карты) и подпись к ней. */
+  reviewsUrl: string;
+  reviewsLabel: string;
   address: string;
   lat: number;
   lng: number;
   menu: { label: string; href: string }[];
+  /* Варианты в поле «Куда едете» формы заявки. */
+  directions: string[];
 };
 
 export const DEFAULT_SETTINGS: SiteSettings = {
+  brandName: 'NORDBASE',
+  legalName: 'База отдыха «Север»',
+  seoTitle: 'База отдыха «Север» — Рыбачий и Териберка',
+  seoDescription:
+    'Своя база на полуострове Рыбачий и авторские туры по Териберке. Заброска на вездеходе входит в стоимость тура, пропуск в погранзону оформляем сами.',
+  ctaLabel: 'Оставить заявку',
+  reviewsUrl: '',
+  reviewsLabel: 'Смотреть отзывы на Яндекс.Картах',
+  directions: ['Полуостров Рыбачий', 'Териберка', 'Ещё не решили'],
   phone: '+7 911 802-86-14',
   telegram: 'https://t.me/+79118028614',
   whatsapp: 'https://wa.me/79118028614',
@@ -201,6 +224,14 @@ export const DEFAULT_SETTINGS: SiteSettings = {
    означал, что menu: null из ручной правки БД уронит вообще всё, включая
    главную. Поэтому разбираем схемой и на любой мусор берём значение по умолчанию. */
 const settingsSchema = z.object({
+  brandName: z.string().catch(DEFAULT_SETTINGS.brandName),
+  legalName: z.string().catch(DEFAULT_SETTINGS.legalName),
+  seoTitle: z.string().catch(DEFAULT_SETTINGS.seoTitle),
+  seoDescription: z.string().catch(DEFAULT_SETTINGS.seoDescription),
+  ctaLabel: z.string().catch(DEFAULT_SETTINGS.ctaLabel),
+  reviewsUrl: z.string().catch(DEFAULT_SETTINGS.reviewsUrl),
+  reviewsLabel: z.string().catch(DEFAULT_SETTINGS.reviewsLabel),
+  directions: z.array(z.string()).catch(DEFAULT_SETTINGS.directions),
   phone: z.string().catch(DEFAULT_SETTINGS.phone),
   telegram: z.string().catch(DEFAULT_SETTINGS.telegram),
   whatsapp: z.string().catch(DEFAULT_SETTINGS.whatsapp),

@@ -91,7 +91,9 @@ export async function submitRequest(
         ? `с ${formatDate(input.dateFrom)}`
         : '';
 
-  await sendTelegram(
+  /* Заявка уже в базе, поэтому неудачное уведомление не должно отражаться
+     на госте: он своё дело сделал. Владелец увидит заявку в админке. */
+  const notified = await sendTelegram(
     formatRequest('Новая заявка с сайта', [
       { label: 'Имя', value: input.name },
       { label: 'Телефон', value: input.phone },
@@ -106,6 +108,10 @@ export async function submitRequest(
       { label: 'Номер заявки', value: saved?.id.slice(0, 8) ?? '' },
     ]),
   );
+
+  if (!notified.ok) {
+    console.warn('[request] заявка сохранена, уведомление не ушло:', notified.reason);
+  }
 
   return { ok: true };
 }

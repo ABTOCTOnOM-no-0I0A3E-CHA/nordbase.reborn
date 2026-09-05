@@ -91,13 +91,13 @@ const spring = await photo('teriberka/vesna.jpg', 'Весенняя Терибе
 const summer = await photo('teriberka/summer.jpg', 'Летняя Териберка, Баренцево море');
 const autumn = await photo('teriberka/autumn.jpg', 'Осенние краски Териберки');
 
-const house1Cover = await photo('rybachiy/houses/1/panorama.webp', 'Эко-дом №1, вид снаружи');
-const house1Living = await photo('rybachiy/houses/1/livingRoom.webp', 'Гостиная эко-дома №1');
-const house1Kitchen = await photo('rybachiy/houses/1/kitchen.webp', 'Кухня эко-дома №1');
-const house1Second = await photo('rybachiy/houses/1/secondFloor.webp', 'Второй этаж эко-дома №1');
+const house1Cover = await photo('rybachiy/houses/1/panorama.webp', 'Дом 1, вид снаружи');
+const house1Living = await photo('rybachiy/houses/1/livingRoom.webp', 'Гостиная дома 1');
+const house1Kitchen = await photo('rybachiy/houses/1/kitchen.webp', 'Кухня дома 1');
+const house1Second = await photo('rybachiy/houses/1/secondFloor.webp', 'Второй этаж дома 1');
 
-const house2Cover = await photo('rybachiy/houses/2/panorama.jpg', 'Эко-дом №2, вид снаружи');
-const house2Living = await photo('rybachiy/houses/2/livingroom.jpg', 'Гостиная эко-дома №2');
+const house2Cover = await photo('rybachiy/houses/2/panorama.jpg', 'Дом 2, вид снаружи');
+const house2Living = await photo('rybachiy/houses/2/livingroom.jpg', 'Гостиная дома 2');
 
 const galleryIds = (
   await Promise.all([
@@ -119,7 +119,7 @@ const houseRows = await db
   .values([
     {
       slug: 'dom-1',
-      title: 'Эко-дом №1',
+      title: 'Дом 1',
       summary: 'Двухэтажный дом со всеми удобствами, кухня и панорамный вид.',
       capacity: 6,
       pricePerNight: 5500,
@@ -152,7 +152,7 @@ const houseRows = await db
     },
     {
       slug: 'dom-2',
-      title: 'Эко-дом №2',
+      title: 'Дом 2',
       summary: 'Дом со всеми удобствами и просторной гостиной, 4–6 гостей.',
       capacity: 6,
       pricePerNight: 5500,
@@ -182,7 +182,7 @@ const houseRows = await db
     },
     {
       slug: 'dom-3',
-      title: 'Эко-дом №3',
+      title: 'Дом 3',
       summary: 'Третий дом базы. Фотографии и описание добавим по вашим материалам.',
       capacity: 4,
       pricePerNight: 5500,
@@ -248,7 +248,7 @@ const tourRows = await db
       slug: 'dvuhdnevnyy',
       title: 'Двухдневный тур',
       summary:
-        'Классический маршрут по полуострову: водопады, смотровые, батарея и мысы. Ночёвка на базе.',
+        'Классический маршрут по полуострову: водопады, смотровые, батарея и мысы. Ночёвка на базе, заброска на вездеходе включена.',
       days: 2,
       price: null,
       coverId: heroRybachiy,
@@ -256,6 +256,7 @@ const tourRows = await db
       status: 'published',
       meta: [
         { label: 'Встреча', value: 'Титовка' },
+        { label: 'Вездеход', value: 'входит в стоимость' },
         { label: 'Пропуск в погранзону', value: 'оформляем сами' },
       ],
       body: [],
@@ -272,6 +273,7 @@ const tourRows = await db
       status: 'published',
       meta: [
         { label: 'Встреча', value: 'Титовка' },
+        { label: 'Вездеход', value: 'входит в стоимость' },
         { label: 'Пропуск в погранзону', value: 'оформляем сами' },
       ],
       body: [],
@@ -387,10 +389,10 @@ await db.insert(s.seasons).values([
 await db.insert(s.prices).values([
   {
     group: 'base',
-    title: 'Вездеход с водителем',
-    note: 'Базовая вместимость 4 человека, в поездке до 8. Встреча и возврат в Титовке',
-    amount: 40000,
-    unit: 'в день',
+    title: 'Заброска на вездеходе',
+    note: 'Встреча и возврат в Титовке, до 8 человек в поездке',
+    amount: null,
+    unit: 'входит в тур',
     sort: 1,
   },
   {
@@ -411,11 +413,19 @@ await db.insert(s.prices).values([
   },
   {
     group: 'extra',
+    title: 'Вездеход отдельно, без тура',
+    note: 'На группу. Базовая вместимость 4 человека, в поездке до 8',
+    amount: 40000,
+    unit: 'в день',
+    sort: 4,
+  },
+  {
+    group: 'extra',
     title: 'Баня',
-    note: 'За сеанс, по записи',
+    note: 'За сеанс, по записи. Цену уточняйте',
     amount: null,
     unit: '',
-    sort: 4,
+    sort: 5,
   },
   {
     group: 'extra',
@@ -423,7 +433,7 @@ await db.insert(s.prices).values([
     note: 'За человека, любой сезон',
     amount: null,
     unit: '',
-    sort: 5,
+    sort: 6,
   },
   {
     group: 'extra',
@@ -431,7 +441,7 @@ await db.insert(s.prices).values([
     note: 'Оформляем сами, нужен паспорт. Входит в тур',
     amount: null,
     unit: '',
-    sort: 6,
+    sort: 7,
   },
 ]);
 
@@ -445,7 +455,7 @@ await db.insert(s.faq).values(
     ],
     [
       'Из чего складывается стоимость?',
-      'Из трёх частей: вездеход — 40 000 ₽ в день на группу, проживание — 5 500 ₽ с человека в сутки, питание — 2 500 ₽ с человека в день. Баня и туры по Териберке считаются отдельно.',
+      'Заброска на вездеходе входит в стоимость тура. Отдельно считаются проживание — 5 500 ₽ с человека в сутки и питание — 2 500 ₽ с человека в день. Баня и туры по Териберке — по запросу.',
     ],
     [
       'Сколько человек берёте в поездку?',
@@ -471,6 +481,16 @@ await db.insert(s.faq).values(
 await db.insert(s.settings).values({
   key: 'site',
   value: {
+    brandName: 'NORDBASE',
+    legalName: 'База отдыха «Север»',
+    seoTitle: 'База отдыха «Север» — Рыбачий и Териберка',
+    seoDescription:
+      'Своя база на полуострове Рыбачий и авторские туры по Териберке. Заброска на вездеходе входит в стоимость тура, пропуск в погранзону оформляем сами.',
+    ctaLabel: 'Оставить заявку',
+    /* Ссылку на карточку базы в Яндекс.Картах владелец добавит в настройках. */
+    reviewsUrl: '',
+    reviewsLabel: 'Смотреть отзывы на Яндекс.Картах',
+    directions: ['Полуостров Рыбачий', 'Териберка', 'Ещё не решили'],
     phone: '+7 911 802-86-14',
     telegram: 'https://t.me/+79118028614',
     whatsapp: 'https://wa.me/79118028614',
@@ -484,6 +504,7 @@ await db.insert(s.settings).values({
       { label: 'Териберка', href: '/teriberka' },
       { label: 'Транспорт', href: '/transport' },
       { label: 'Цены', href: '/ceny' },
+      { label: 'Отзывы', href: '/otzyvy' },
       { label: 'Контакты', href: '/contacts' },
     ],
   },
@@ -508,7 +529,7 @@ await db.insert(s.pages).values([
       {
         type: 'hero',
         ...heading('База отдыха «Север»', 'Погрузитесь в магию Кольского полуострова'),
-        lead: 'Своя база на полуострове Рыбачий и авторские туры по Териберке. Забрасываем на вездеходе, пропуск в погранзону оформляем сами — от вас только паспорт.',
+        lead: 'Своя база на полуострове Рыбачий и авторские туры по Териберке. Заброска на вездеходе входит в стоимость тура, пропуск в погранзону оформляем сами — от вас только паспорт.',
         mediaId: heroMain,
         aurora: true,
         primaryLabel: 'Оставить заявку',
@@ -573,6 +594,7 @@ await db.insert(s.pages).values([
           'Заполните форму: даты, домик и число гостей. Заявка придёт нам сразу и в том же виде, в каком мы записали бы её по телефону.',
         ),
       },
+      { type: 'reviews', ...heading('Отзывы', 'Что говорят гости') },
       { type: 'faq', ...heading('Вопросы', 'О чём спрашивают чаще всего') },
     ],
   },
@@ -742,7 +764,7 @@ await db.insert(s.pages).values([
         ...heading(
           'Цены',
           'Сколько стоит поездка',
-          'Три составляющие считаются отдельно: заброска, проживание и питание. Итог собираем под ваши даты и количество гостей.',
+          'Заброска на вездеходе входит в стоимость тура. Отдельно считаются проживание и питание — итог собираем под ваши даты и количество гостей.',
         ),
         group: 'base',
       },
@@ -769,6 +791,27 @@ await db.insert(s.pages).values([
     ],
   },
   {
+    slug: 'otzyvy',
+    title: 'Отзывы',
+    seoTitle: 'Отзывы гостей — база отдыха «Север»',
+    seoDescription: 'Отзывы гостей о базе на полуострове Рыбачий и турах по Териберке.',
+    status: 'published',
+    publishedAt: new Date(),
+    body: [
+      {
+        type: 'text',
+        ...heading(
+          'Отзывы',
+          'Что говорят гости',
+          'Пока отзывы собираются на Яндекс.Картах. Добавьте ссылку в настройках сайта — здесь появится кнопка, а сами отзывы можно завести в разделе «Отзывы».',
+        ),
+        body: '',
+      },
+      { type: 'reviews', ...heading('', '') },
+      { type: 'requestForm', ...heading('Заявка', 'Поехать к нам') },
+    ],
+  },
+  {
     slug: 'policy',
     title: 'Политика обработки персональных данных',
     seoTitle: 'Политика обработки персональных данных',
@@ -789,7 +832,7 @@ const counts = {
   media: imported.size,
   houses: houseRows.length,
   tours: tourRows.length,
-  pages: 8,
+  pages: 9,
 };
 
 console.log('Готово:', counts);

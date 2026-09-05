@@ -7,9 +7,8 @@ export function JsonLd({ settings }: { settings: SiteSettings }) {
   const data = {
     '@context': 'https://schema.org',
     '@type': 'LodgingBusiness',
-    name: 'База отдыха «Север»',
-    description:
-      'Своя база на полуострове Рыбачий и авторские туры по Териберке. Заброска на вездеходе, пропуск в погранзону оформляем сами.',
+    name: settings.legalName,
+    description: settings.seoDescription,
     url: siteUrl(),
     telephone: settings.phone,
     address: {
@@ -23,7 +22,7 @@ export function JsonLd({ settings }: { settings: SiteSettings }) {
       latitude: settings.lat,
       longitude: settings.lng,
     },
-    sameAs: [settings.vk, settings.telegram].filter(Boolean),
+    sameAs: [settings.vk, settings.telegram, settings.reviewsUrl].filter(Boolean),
     amenityFeature: [
       { '@type': 'LocationFeatureSpecification', name: 'Баня', value: true },
       { '@type': 'LocationFeatureSpecification', name: 'Питание', value: true },

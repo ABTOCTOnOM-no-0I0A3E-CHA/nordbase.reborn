@@ -10,6 +10,10 @@ const schema = z.object({
 
   TELEGRAM_BOT_TOKEN: z.string().optional(),
   TELEGRAM_CHAT_ID: z.string().optional(),
+  /* Свой обратный прокси вместо api.telegram.org — для доступа из России. */
+  TELEGRAM_API_BASE: z.url().optional(),
+  /* HTTP(S)-прокси с поддержкой CONNECT. SOCKS5 не поддерживается. */
+  TELEGRAM_PROXY_URL: z.url().optional(),
 
   S3_ENDPOINT: z.string().optional(),
   S3_REGION: z.string().optional(),

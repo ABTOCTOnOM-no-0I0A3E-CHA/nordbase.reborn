@@ -4,7 +4,7 @@ import { and, asc, eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { houseMedia, houses, media } from '@/db/schema';
 import { parseBlocks } from '@/lib/blocks';
-import { loadBlockData, parseMeta } from '@/lib/site-data';
+import { loadBlockData, loadSettings, parseMeta } from '@/lib/site-data';
 import { BlockList } from '@/components/blocks/render';
 import { Picture } from '@/components/blocks/Picture';
 import { Btn, Card, Eyebrow, Section } from '@/components/site/ui';
@@ -49,7 +49,7 @@ export default async function HousePage({ params }: { params: Promise<Params> })
     Promise.resolve(parseBlocks(house.body)),
   ]);
 
-  const data = await loadBlockData(blocks);
+  const [data, settings] = await Promise.all([loadBlockData(blocks), loadSettings()]);
   for (const row of gallery) data.media.set(row.media.id, row.media);
 
   /* Обложка — то, что выбрано в админке; галерея лишь запасной вариант,
@@ -64,12 +64,12 @@ export default async function HousePage({ params }: { params: Promise<Params> })
     <>
       <Section>
         <div className="pt-24">
-          <Eyebrow>Домики базы «Север»</Eyebrow>
+          <Eyebrow>Домики: {settings.legalName}</Eyebrow>
           <div className="mt-4 flex flex-wrap items-end justify-between gap-6">
             <h1 className="max-w-[16ch] text-[clamp(30px,4.4vw,52px)] leading-[1.1] font-bold tracking-[-0.025em]">
               {house.title}
             </h1>
-            <Btn href="/#request">Забронировать</Btn>
+            <Btn href="/#request">{settings.ctaLabel}</Btn>
           </div>
           <p className="text-ink-2 mt-4 max-w-[56ch] text-[18px]">{house.summary}</p>
 
@@ -113,7 +113,7 @@ export default async function HousePage({ params }: { params: Promise<Params> })
             <h2 className="text-2xl font-bold tracking-tight">Свободны нужные даты?</h2>
             <p className="text-ink-2 mt-2">Оставьте заявку — проверим и перезвоним.</p>
             <div className="mt-5 flex justify-center">
-              <Btn href="/#request">Оставить заявку</Btn>
+              <Btn href="/#request">{settings.ctaLabel}</Btn>
           </div>
         </div>
       </Section>

@@ -9,7 +9,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   return (
     <>
       <JsonLd settings={settings} />
-      <Header menu={settings.menu} />
+      <Header menu={settings.menu} brandName={settings.brandName} ctaLabel={settings.ctaLabel} />
       <main>{children}</main>
       <Footer settings={settings} />
     </>

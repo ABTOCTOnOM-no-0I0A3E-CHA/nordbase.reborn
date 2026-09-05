@@ -8,6 +8,13 @@ import { settings } from '@/db/schema';
 import { requireOwner } from '@/lib/auth/guard';
 
 const schema = z.object({
+  brandName: z.string().trim().min(1, 'Название в шапке обязательно').max(60),
+  legalName: z.string().trim().min(1, 'Название базы обязательно').max(120),
+  seoTitle: z.string().trim().max(200),
+  seoDescription: z.string().trim().max(400),
+  ctaLabel: z.string().trim().min(1, 'Надпись на кнопке обязательна').max(60),
+  reviewsUrl: z.string().trim().max(300),
+  reviewsLabel: z.string().trim().max(120),
   phone: z.string().trim().max(40),
   telegram: z.string().trim().max(300),
   whatsapp: z.string().trim().max(300),
@@ -31,7 +38,14 @@ export async function saveSettings(formData: FormData): Promise<void> {
     .map((label, i) => ({ label: label.trim(), href: (hrefs[i] ?? '').trim() }))
     .filter((item) => item.label !== '' && item.href !== '');
 
-  const value = { ...base, menu };
+  /* Варианты «Куда едете» — по одному на строку: отдельный редактор списка
+     ради трёх значений был бы избыточен. */
+  const directions = String(formData.get('directions') ?? '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const value = { ...base, menu, directions };
 
   await db
     .insert(settings)

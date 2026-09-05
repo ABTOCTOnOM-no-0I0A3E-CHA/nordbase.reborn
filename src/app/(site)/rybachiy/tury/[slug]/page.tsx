@@ -4,7 +4,7 @@ import { and, asc, eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { tourDays, tourStops, tours } from '@/db/schema';
 import { parseBlocks } from '@/lib/blocks';
-import { loadBlockData, parseMeta } from '@/lib/site-data';
+import { loadBlockData, loadSettings, parseMeta } from '@/lib/site-data';
 import { BlockList } from '@/components/blocks/render';
 import { Btn, Card, Eyebrow, Section } from '@/components/site/ui';
 
@@ -58,7 +58,7 @@ export default async function TourPage({ params }: { params: Promise<Params> }) 
   }
 
   const blocks = parseBlocks(tour.body);
-  const data = await loadBlockData(blocks);
+  const [data, settings] = await Promise.all([loadBlockData(blocks), loadSettings()]);
 
   return (
     <>
@@ -69,7 +69,7 @@ export default async function TourPage({ params }: { params: Promise<Params> }) 
             <h1 className="max-w-[16ch] text-[clamp(30px,4.4vw,52px)] leading-[1.1] font-bold tracking-[-0.025em]">
               {tour.title}
             </h1>
-            <Btn href="/#request">Забронировать</Btn>
+            <Btn href="/#request">{settings.ctaLabel}</Btn>
           </div>
           <p className="text-ink-2 mt-4 max-w-[60ch] text-[18px]">{tour.summary}</p>
 

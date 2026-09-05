@@ -3,6 +3,7 @@ import type { Block } from '@/lib/blocks';
 import { loadRequestFormOptions, type BlockData } from '@/lib/site-data';
 import { loadBusyDates } from '@/lib/occupancy';
 import { todayIso } from '@/lib/dates';
+import { loadSettings } from '@/lib/site-data';
 import { Aurora } from '@/components/site/Aurora';
 import { Btn, Card, Eyebrow, Prose, Section, SectionHead, Wrap } from '@/components/site/ui';
 import { Picture } from './Picture';
@@ -366,9 +367,17 @@ function Prices({ block, data }: { block: Extract<Block, { type: 'prices' }>; da
               </span>
             ) : null}
             <span className="border-line-2 hidden min-w-4 flex-1 -translate-y-1 border-b border-dotted sm:block" />
+            {/* Без суммы правую колонку заполняет «Единица»: туда владелец
+                пишет «включено» или «по запросу». Пусто — ставим «по запросу». */}
             <span className="text-ice ml-auto font-semibold whitespace-nowrap">
-              {money(row.amount) ?? 'по запросу'}
-              {row.unit ? <span className="text-ink-3 font-normal"> {row.unit}</span> : null}
+              {row.amount === null ? (
+                <span className="text-ink-2">{row.unit || 'по запросу'}</span>
+              ) : (
+                <>
+                  {money(row.amount)}
+                  {row.unit ? <span className="text-ink-3 font-normal"> {row.unit}</span> : null}
+                </>
+              )}
             </span>
           </div>
         ))}
@@ -377,8 +386,22 @@ function Prices({ block, data }: { block: Extract<Block, { type: 'prices' }>; da
   );
 }
 
-function Reviews({ block, data }: { block: Extract<Block, { type: 'reviews' }>; data: BlockData }) {
-  if (data.reviews.length === 0) return null;
+async function Reviews({ block, data }: { block: Extract<Block, { type: 'reviews' }>; data: BlockData }) {
+  const settings = await loadSettings();
+  const external = safeHref(settings.reviewsUrl);
+
+  /* Пока своих отзывов нет, но есть карточка на Яндекс.Картах — показываем
+     только ссылку. Пустая секция без единого отзыва на сайте не нужна. */
+  if (data.reviews.length === 0) {
+    if (!external) return null;
+    return (
+      <>
+        <SectionHead eyebrow={block.eyebrow} title={block.title} subtitle={block.subtitle} />
+        <Btn href={external}>{settings.reviewsLabel}</Btn>
+      </>
+    );
+  }
+
   return (
     <>
       <SectionHead eyebrow={block.eyebrow} title={block.title} subtitle={block.subtitle} />
@@ -395,6 +418,13 @@ function Reviews({ block, data }: { block: Extract<Block, { type: 'reviews' }>; 
           </Card>
         ))}
       </div>
+      {external ? (
+        <div className="mt-7">
+          <Btn href={external} variant="outline">
+            {settings.reviewsLabel}
+          </Btn>
+        </div>
+      ) : null}
     </>
   );
 }
@@ -408,15 +438,23 @@ async function RequestFormSection({
   block: Extract<Block, { type: 'requestForm' }>;
   data: BlockData;
 }) {
-  const [{ houses, tours }, busyByHouse] = await Promise.all([
+  const [{ houses, tours }, busyByHouse, settings] = await Promise.all([
     loadRequestFormOptions(data),
     loadBusyDates(),
+    loadSettings(),
   ]);
 
   return (
     <>
       <SectionHead eyebrow={block.eyebrow} title={block.title} subtitle={block.subtitle} />
-      <RequestForm houses={houses} tours={tours} busyByHouse={busyByHouse} today={todayIso()} />
+      <RequestForm
+        houses={houses}
+        tours={tours}
+        busyByHouse={busyByHouse}
+        today={todayIso()}
+        directions={settings.directions}
+        submitLabel={settings.ctaLabel}
+      />
     </>
   );
 }

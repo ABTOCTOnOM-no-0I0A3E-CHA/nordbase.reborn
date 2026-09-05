@@ -1,11 +1,15 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { loadSettings } from '@/lib/site-data';
 
-export const metadata: Metadata = {
-  title: { default: 'База отдыха «Север» — Рыбачий и Териберка', template: '%s — Nordbase' },
-  description:
-    'Своя база на полуострове Рыбачий и авторские туры по Териберке. Заброска на вездеходе, пропуск в погранзону оформляем сами.',
-};
+/* Заголовок и описание по умолчанию правятся в админке, а не в коде. */
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await loadSettings();
+  return {
+    title: { default: settings.seoTitle, template: `%s — ${settings.brandName}` },
+    description: settings.seoDescription,
+  };
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

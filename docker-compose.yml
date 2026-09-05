@@ -1,0 +1,23 @@
+services:
+  db:
+    image: postgres:18-alpine
+    container_name: nordbase-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nordbase
+      POSTGRES_PASSWORD: nordbase
+      POSTGRES_DB: nordbase
+    ports:
+      - '5432:5432'
+    volumes:
+      # Postgres 18+ ждёт один том на /var/lib/postgresql и сам раскладывает
+      # данные в подкаталог с номером мажора — так работает pg_upgrade --link.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U nordbase -d nordbase']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

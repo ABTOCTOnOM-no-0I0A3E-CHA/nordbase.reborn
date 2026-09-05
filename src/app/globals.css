@@ -1,0 +1,67 @@
+@import 'tailwindcss';
+
+/* Палитра «Полярная ночь» — утверждена на концепте.
+   Цвета сияния (--color-sky-*) живут только в анимации хиро и в интерфейсе не участвуют. */
+@theme {
+  --color-bg: #081119;
+  --color-bg-0: #050b11;
+  --color-bg-2: #0c1822;
+  --color-bg-3: #11212c;
+  --color-bg-4: #1a2e3b;
+
+  --color-ink: #e6eef2;
+  --color-ink-2: #9db1bd;
+  --color-ink-3: #798c99;
+  --color-ink-hero: #c6d6de;
+
+  --color-aurora: #5fa88b;
+  --color-aurora-hi: #77c2a3;
+  --color-aurora-ink: #04150f;
+
+  --color-ice: #7fa9c4;
+  --color-violet: #8b84b5;
+  --color-amber: #c9924f;
+
+  /* свободно / занято в календаре — намеренно не завязаны на акцент */
+  --color-ok: #5fa88b;
+  --color-busy: #c9724f;
+
+  --color-sky-1: #2c6f5e;
+  --color-sky-2: #54a98c;
+  --color-sky-3: #6c86c0;
+
+  --color-line: rgb(190 214 226 / 0.14);
+  --color-line-2: rgb(190 214 226 / 0.28);
+
+  --font-sans: var(--font-golos), 'Segoe UI', system-ui, sans-serif;
+  --font-display: var(--font-unbounded), var(--font-golos), sans-serif;
+
+  --radius-card: 16px;
+  --radius-panel: 18px;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-aurora);
+  color: var(--color-aurora-ink);
+}

@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFormAction } from '@/lib/use-form-action';
 import { Dropdown } from '@/components/form/Dropdown';
 import { DateField } from '@/components/form/DateField';
+import { RequestSuccess } from './RequestSuccess';
 import { submitRequest, type RequestState } from '@/lib/request-actions';
 import type { HouseRecord, TourRecord } from '@/lib/site-data';
 
@@ -34,6 +35,8 @@ export function RequestForm({
   today,
   directions,
   submitLabel,
+  telegram,
+  whatsapp,
 }: {
   houses: Pick<HouseRecord, 'id' | 'title'>[];
   tours: Pick<TourRecord, 'id' | 'title'>[];
@@ -41,11 +44,36 @@ export function RequestForm({
   /* Варианты «Куда едете» и надпись на кнопке правятся в настройках сайта. */
   directions: string[];
   submitLabel: string;
+  /* Ссылки на мессенджеры показываем на карточке «отправлено». */
+  telegram: string;
+  whatsapp: string;
   /* «Сегодня» считает сервер по часовому поясу базы: у гостя в браузере
      может стоять любая зона, и минимальная дата уехала бы на сутки. */
   today: string;
 }) {
-  const { state, pending, onSubmit } = useFormAction(submitRequest, initial);
+  const wrapRef = useRef<HTMLFormElement>(null);
+  /* Высоту формы запоминаем до того, как она исчезнет: карточка «отправлено»
+     занимает то же место, и страница не прыгает вверх. */
+  const [holdHeight, setHoldHeight] = useState<number | null>(null);
+  const [leaving, setLeaving] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const { state, pending, onSubmit } = useFormAction(submitRequest, initial, {
+    onSuccess: (next) => {
+      if (!next.ok) return;
+      setHoldHeight(wrapRef.current?.offsetHeight ?? null);
+      setLeaving(true);
+    },
+  });
+
+  /* Форма гаснет, и только потом на её месте появляется карточка. */
+  useEffect(() => {
+    if (!leaving) return;
+    const timer = setTimeout(() => setDone(true), 320);
+    return () => clearTimeout(timer);
+  }, [leaving]);
+
+  const [name, setName] = useState('');
   const [guests, setGuests] = useState(2);
   const [houseId, setHouseId] = useState('');
   const [dateFrom, setDateFrom] = useState('');
@@ -56,20 +84,22 @@ export function RequestForm({
   const busy = houseId ? (busyByHouse[houseId] ?? []) : [];
   const clash = nights(dateFrom, dateTo).filter((date) => busy.includes(date));
 
-  if (state.ok) {
+  if (done) {
     return (
-      <div className="border-line bg-bg-3 rounded-[18px] border p-8 text-center">
-        <p className="text-aurora mb-2 text-[19px] font-bold">Заявка отправлена</p>
-        <p className="text-ink-2">
-          Мы получили её и свяжемся с вами в ближайшее время. Если вопрос срочный — напишите в
-          Telegram или WhatsApp.
-        </p>
+      <div style={holdHeight ? { minHeight: holdHeight } : undefined} className="flex items-center">
+        <div className="w-full">
+          <RequestSuccess telegram={telegram} whatsapp={whatsapp} name={name.trim().split(' ')[0] ?? ''} />
+        </div>
       </div>
     );
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-4 md:grid-cols-2">
+    <form
+      ref={wrapRef}
+      onSubmit={onSubmit}
+      className={`grid gap-4 md:grid-cols-2 ${leaving ? 'request-sending' : ''}`}
+    >
       <div className="md:col-span-2">
         <label className={label} htmlFor="direction">
           Куда едете
@@ -191,7 +221,16 @@ export function RequestForm({
         <label className={label} htmlFor="name">
           Имя
         </label>
-        <input id="name" name="name" required minLength={2} className={field} autoComplete="name" />
+        <input
+          id="name"
+          name="name"
+          required
+          minLength={2}
+          className={field}
+          autoComplete="name"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+        />
       </div>
 
       <div>
@@ -233,10 +272,10 @@ export function RequestForm({
       <div className="md:col-span-2">
         <button
           type="submit"
-          disabled={pending}
+          disabled={pending || leaving}
           className="bg-aurora text-aurora-ink hover:bg-aurora-hi cursor-pointer rounded-full px-7 py-3 font-semibold disabled:opacity-60"
         >
-          {pending ? 'Отправляем…' : submitLabel}
+          {pending || leaving ? 'Отправляем…' : submitLabel}
         </button>
       </div>
     </form>

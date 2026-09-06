@@ -200,6 +200,112 @@ body {
   text-underline-offset: 2px;
 }
 
+/* ---------- отправка заявки ----------
+   Форма гаснет на месте, карточка разворачивается ей на замену. Анимируем
+   только transform и opacity — их браузер считает на видеокарте, поэтому
+   на слабом телефоне это не подтормаживает и не вызывает перерасчёт вёрстки. */
+
+.request-sending {
+  animation: request-out 0.32s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  pointer-events: none;
+}
+
+@keyframes request-out {
+  to {
+    opacity: 0;
+    transform: scale(0.985) translateY(-6px);
+  }
+}
+
+.request-done {
+  animation: request-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes request-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(10px);
+  }
+}
+
+.request-done-glow {
+  animation: request-glow 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+}
+
+@keyframes request-glow {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.request-done-badge {
+  animation: request-badge 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.12s both;
+}
+
+@keyframes request-badge {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+
+/* Галочка рисуется штрихом — короткий, но заметный жест «принято». */
+.request-done-tick {
+  stroke-dasharray: 26;
+  stroke-dashoffset: 26;
+  animation: request-tick 0.4s cubic-bezier(0.65, 0, 0.35, 1) 0.32s both;
+}
+
+@keyframes request-tick {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.request-done-line {
+  animation: request-line 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.request-done-line-1 {
+  animation-delay: 0.34s;
+}
+.request-done-line-2 {
+  animation-delay: 0.42s;
+}
+.request-done-line-3 {
+  animation-delay: 0.5s;
+}
+
+@keyframes request-line {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Гостю, который просил меньше движения, показываем всё сразу. */
+@media (prefers-reduced-motion: reduce) {
+  .request-sending,
+  .request-done,
+  .request-done-glow,
+  .request-done-badge,
+  .request-done-tick,
+  .request-done-line {
+    animation: none;
+  }
+  .request-done-tick {
+    stroke-dashoffset: 0;
+  }
+  .request-sending {
+    opacity: 0;
+  }
+}
+
 ::selection {
   background: var(--color-aurora);
   color: var(--color-aurora-ink);

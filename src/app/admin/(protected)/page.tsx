@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { and, asc, desc, eq, gt, ne, sql } from 'drizzle-orm';
 import { db } from '@/db';
-import { bookings, houses, media, pages, requests } from '@/db/schema';
+import { bookings, houses, requests } from '@/db/schema';
 import { AdminHeading, EmptyState, LinkButton, Panel } from '@/components/admin/ui';
 import { Icon, type IconName } from '@/components/admin/icons';
 import { todayIso } from '@/lib/dates';
@@ -26,7 +26,7 @@ const shortcuts: { href: string; label: string; icon: IconName }[] = [
 export default async function Dashboard() {
   const today = todayIso();
 
-  const [counts, latest, upcoming, gaps] = await Promise.all([
+  const [counts, latest, upcoming] = await Promise.all([
     db
       .select({
         total: sql<number>`count(*)::int`,
@@ -61,41 +61,10 @@ export default async function Dashboard() {
       .orderBy(asc(bookings.dateFrom))
       .limit(5),
 
-    /* Подсказки о дырах в контенте: владельцу полезнее увидеть их здесь,
-       чем однажды обнаружить пустую карточку на сайте. */
-    Promise.all([
-      db.select({ n: sql<number>`count(*)::int` }).from(houses).where(eq(houses.status, 'draft')),
-      db.select({ n: sql<number>`count(*)::int` }).from(pages).where(eq(pages.status, 'draft')),
-      db.select({ n: sql<number>`count(*)::int` }).from(media).where(eq(media.alt, '')),
-    ]),
   ]);
 
-  const [draftHouses, draftPages, noAlt] = gaps;
   const fresh = counts[0]?.fresh ?? 0;
 
-  const hints = [
-    draftHouses[0]?.n
-      ? {
-          text: `Домиков спрятано от гостей: ${draftHouses[0].n}`,
-          why: 'Черновики на сайте не видны — опубликуйте, когда будут фото и описание.',
-          href: '/admin/houses',
-        }
-      : null,
-    draftPages[0]?.n
-      ? {
-          text: `Страниц в черновиках: ${draftPages[0].n}`,
-          why: 'Пока страница в черновике, по её адресу гость увидит «страница не найдена».',
-          href: '/admin/pages',
-        }
-      : null,
-    noAlt[0]?.n
-      ? {
-          text: `Фотографий без описания: ${noAlt[0].n}`,
-          why: 'Описание помогает поиску находить ваши фото и читается вслух незрячим гостям.',
-          href: '/admin/media',
-        }
-      : null,
-  ].filter((hint): hint is { text: string; why: string; href: string } => hint !== null);
 
   return (
     <div>
@@ -202,27 +171,6 @@ export default async function Dashboard() {
           )}
         </Panel>
       </div>
-
-      {hints.length > 0 ? (
-        <Panel
-          className="mt-5"
-          title="Стоит доделать"
-          description="Не срочно, но гости этого не увидят, пока не поправите."
-        >
-          <ul className="grid gap-3">
-            {hints.map((hint) => (
-              <li key={hint.href}>
-                <Link href={hint.href} className="group block">
-                  <b className="text-ink group-hover:text-aurora block text-[14px] font-semibold transition">
-                    {hint.text} →
-                  </b>
-                  <span className="text-ink-3 text-[13px]">{hint.why}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      ) : null}
 
       {latest.length === 0 && upcoming.length === 0 ? (
         <div className="mt-5">

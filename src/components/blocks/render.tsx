@@ -478,6 +478,8 @@ async function RequestFormSection({
         today={todayIso()}
         directions={settings.directions}
         submitLabel={settings.ctaLabel}
+        telegram={settings.telegram}
+        whatsapp={settings.whatsapp}
       />
     </>
   );

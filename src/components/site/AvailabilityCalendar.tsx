@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { addDays } from '@/lib/dates';
+import { usePickedDates } from './PickedDates';
 
 /* Календарь занятости для гостя.
 
@@ -40,18 +42,41 @@ function iso(year: number, month: number, day: number): string {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
+function human(value: string): string {
+  const [year, month, day] = value.split('-');
+  return `${day}.${month}.${year}`;
+}
+
+function nightsBetween(from: string, to: string): number {
+  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
+}
+
+function nightWord(count: number): string {
+  const tail = count % 10;
+  const teen = count % 100 >= 11 && count % 100 <= 14;
+  if (!teen && tail === 1) return 'ночь';
+  if (!teen && tail >= 2 && tail <= 4) return 'ночи';
+  return 'ночей';
+}
+
 function Month({
   year,
   month,
   today,
   houseCount,
   takenPerDay,
+  from,
+  to,
+  onPick,
 }: {
   year: number;
   month: number;
   today: string;
   houseCount: number;
   takenPerDay: Map<string, number>;
+  from: string;
+  to: string;
+  onPick: (date: string) => void;
 }) {
   const total = daysInMonth(year, month);
   /* getUTCDay: 0 — воскресенье, а неделя у нас начинается с понедельника. */
@@ -82,9 +107,16 @@ function Month({
           const full = houseCount > 0 && taken >= houseCount;
           const last = !full && taken > 0;
 
+          /* Выезд входит в выделение как граница: ночует гость до него. */
+          const edge = date === from || (to !== '' && date === to);
+          const inside = from !== '' && to !== '' && date > from && date < to;
+
           return (
-            <span
+            <button
               key={date}
+              type="button"
+              disabled={past || full}
+              onClick={() => onPick(date)}
               title={
                 past
                   ? undefined
@@ -94,18 +126,22 @@ function Month({
                       ? 'свободны не все домики'
                       : 'свободно'
               }
-              className={`flex h-9 items-center justify-center rounded-[8px] text-[13.5px] tabular-nums ${
-                past
-                  ? 'text-ink-3/40'
-                  : full
-                    ? 'bg-busy/20 text-busy line-through'
-                    : last
-                      ? 'bg-amber/20 text-amber'
-                      : 'bg-ok/15 text-ink'
+              className={`flex h-9 items-center justify-center rounded-[8px] text-[13.5px] tabular-nums transition disabled:cursor-not-allowed ${
+                edge
+                  ? 'bg-aurora text-aurora-ink font-semibold'
+                  : inside
+                    ? 'bg-aurora/25 text-ink'
+                    : past
+                      ? 'text-ink-3/40'
+                      : full
+                        ? 'bg-busy/20 text-busy line-through'
+                        : last
+                          ? 'bg-amber/20 text-amber cursor-pointer hover:brightness-125'
+                          : 'bg-ok/15 text-ink cursor-pointer hover:brightness-125'
               }`}
             >
               {day}
-            </span>
+            </button>
           );
         })}
       </div>
@@ -126,6 +162,11 @@ export function AvailabilityCalendar({
 }) {
   const [offset, setOffset] = useState(0);
   const [pair, setPair] = useState(false);
+  /* Выбор гостя: первый клик — заезд, второй — выезд. */
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [warning, setWarning] = useState('');
+  const { setRange } = usePickedDates();
 
   /* Два месяца рядом помещаются только на широком экране. */
   useEffect(() => {
@@ -155,6 +196,43 @@ export function AvailabilityCalendar({
 
   const canGoBack = offset > 0;
   const canGoForward = offset + shown < months;
+
+  function isFull(date: string): boolean {
+    return houseCount > 0 && (takenPerDay.get(date) ?? 0) >= houseCount;
+  }
+
+  /* Клик по дню. Пока выбран только заезд — второй клик закрывает промежуток,
+     если внутри нет полностью занятых ночей: заявку на такие даты всё равно
+     пришлось бы переносить. */
+  function pick(date: string) {
+    setWarning('');
+
+    if (from === '' || to !== '' || date <= from) {
+      setFrom(date);
+      setTo('');
+      setRange({ from: date, to: '' });
+      return;
+    }
+
+    for (let night = from; night < date; night = addDays(night, 1)) {
+      if (isFull(night)) {
+        setWarning('Внутри этих чисел есть занятые даты — выберите промежуток покороче.');
+        return;
+      }
+    }
+
+    setTo(date);
+    setRange({ from, to: date });
+    /* Форма — следующий шаг, а стоит она ниже: подводим к ней сами. */
+    document.getElementById('request')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function reset() {
+    setFrom('');
+    setTo('');
+    setWarning('');
+    setRange(null);
+  }
 
   return (
     /* Календарь узкий и стоит по центру секции: растягивать таблицу месяца на
@@ -191,9 +269,62 @@ export function AvailabilityCalendar({
             today={today}
             houseCount={houseCount}
             takenPerDay={takenPerDay}
+            from={from}
+            to={to}
+            onPick={pick}
           />
         ))}
       </div>
+
+      {/* Что выбрано — словами, рядом с сеткой: цветная подсветка сама по себе
+          не отвечает на вопрос «а сколько это ночей». */}
+      {from ? (
+        <div className="border-aurora/30 bg-aurora/10 mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[12px] border px-4 py-3">
+          <span className="text-[13.5px]">
+            {to ? (
+              <>
+                <b className="tabular-nums">{human(from)}</b> — <b className="tabular-nums">{human(to)}</b>
+                <span className="text-ink-2">
+                  {' · '}
+                  {nightsBetween(from, to)} {nightWord(nightsBetween(from, to))}
+                </span>
+              </>
+            ) : (
+              <>
+                Заезд <b className="tabular-nums">{human(from)}</b>
+                <span className="text-ink-2"> · теперь выберите день выезда</span>
+              </>
+            )}
+          </span>
+
+          {to ? (
+            <a
+              href="#request"
+              className="bg-aurora text-aurora-ink hover:bg-aurora-hi rounded-full px-4 py-2 text-[13px] font-semibold"
+            >
+              Оставить заявку на эти даты
+            </a>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={reset}
+            className="text-ink-3 hover:text-ink ml-auto cursor-pointer text-[12.5px]"
+          >
+            Сбросить
+          </button>
+        </div>
+      ) : (
+        <p className="text-ink-3 border-line mt-5 rounded-[12px] border border-dashed px-4 py-3 text-[12.5px]">
+          Нажмите день заезда, затем день выезда — даты подставятся в заявку.
+        </p>
+      )}
+
+      {warning ? (
+        <p className="text-amber bg-amber/10 mt-3 rounded-[10px] px-4 py-2.5 text-[12.5px]">
+          {warning}
+        </p>
+      ) : null}
 
       <div className="border-line text-ink-2 mt-5 flex flex-wrap gap-x-5 gap-y-2 border-t pt-4 text-[12.5px]">
         <span className="flex items-center gap-2">

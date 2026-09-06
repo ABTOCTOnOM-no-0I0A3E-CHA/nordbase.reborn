@@ -6,6 +6,7 @@ import { useFormAction } from '@/lib/use-form-action';
 import { Dropdown } from '@/components/form/Dropdown';
 import { DateField } from '@/components/form/DateField';
 import { RequestSuccess } from './RequestSuccess';
+import { usePickedDates } from './PickedDates';
 import { submitRequest, type RequestState } from '@/lib/request-actions';
 import type { HouseRecord, TourRecord } from '@/lib/site-data';
 
@@ -78,6 +79,17 @@ export function RequestForm({
   const [houseId, setHouseId] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+
+  /* Даты, выбранные в календаре занятости выше: гость кликает по числам, а
+     заполняются эти поля — иначе выбор в календаре ничего бы не делал. */
+  const { range } = usePickedDates();
+
+  useEffect(() => {
+    /* «Сбросить» в календаре очищает и поля: иначе кнопка обманывает — выбор
+       снят, а даты в заявке остались прежними. */
+    setDateFrom(range?.from ?? '');
+    setDateTo(range?.to ?? '');
+  }, [range]);
 
   /* Предупреждаем сразу, а не после отправки: занятые даты видны гостю,
      и он не тратит время на заявку, которую всё равно придётся переносить. */

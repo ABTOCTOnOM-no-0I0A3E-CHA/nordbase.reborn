@@ -8,6 +8,7 @@ import { loadMediaOptions } from '@/lib/admin/media-options';
 import { saveTour, saveTourBlocks, saveTourProgram } from '@/lib/admin/content-actions';
 import { AdminHeading, Field, Input, Panel, Select, Textarea } from '@/components/admin/ui';
 import { CoverField } from '@/components/admin/CoverField';
+import { NumberField } from '@/components/form/NumberField';
 import { MetaFields } from '@/components/admin/MetaFields';
 import { BlockEditor } from '@/components/admin/BlockEditor';
 import { EntityForm } from '@/components/admin/EntityForm';
@@ -84,10 +85,17 @@ export default async function TourEditor({ params }: { params: Promise<{ id: str
           </div>
 
           <Field label="Дней">
-            <Input name="days" type="number" min={1} max={30} defaultValue={tour?.days ?? 2} required />
+            <NumberField
+              name="days"
+              min={1}
+              max={30}
+              defaultValue={tour?.days ?? 2}
+              required
+              suffix="дн."
+            />
           </Field>
           <Field label="Цена, ₽" hint="Пусто — цена не показывается">
-            <Input name="price" type="number" min={0} defaultValue={tour?.price ?? ''} />
+            <NumberField name="price" min={0} step={500} defaultValue={tour?.price ?? ''} suffix="₽" />
           </Field>
 
           <Field label="Состояние">

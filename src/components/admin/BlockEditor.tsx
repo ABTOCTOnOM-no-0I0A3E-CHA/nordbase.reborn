@@ -20,6 +20,7 @@ import { useToast } from './Toast';
 import { MediaMultiPicker, MediaPicker, type MediaOption } from './MediaPicker';
 import { Input, Select, Textarea } from './ui';
 import { RichText } from './RichText';
+import { NumberField } from '@/components/form/NumberField';
 
 /* Редактор держит массив блоков в состоянии и отправляет его одной кнопкой.
    Так владелец может двигать блоки и править несколько сразу, не теряя правки
@@ -74,17 +75,13 @@ function FieldControl({
       );
     case 'number':
       return (
-        <Input
-          type="number"
-          step="any"
-          value={typeof value === 'number' ? String(value) : ''}
-          onChange={(e) => {
-            /* Пустое поле и промежуточный ввод вроде «-» отдаём как undefined:
-               JSON.stringify выбросит ключ, и сработает значение по умолчанию
-               из схемы. Иначе в тело страницы уезжали 0 и null. */
-            const parsed = Number(e.target.value);
-            onChange(e.target.value === '' || !Number.isFinite(parsed) ? undefined : parsed);
-          }}
+        <NumberField
+          name={field.name}
+          value={typeof value === 'number' ? value : undefined}
+          /* Пустое поле отдаём как undefined: JSON.stringify выбросит ключ,
+             и сработает значение по умолчанию из схемы. Иначе в тело страницы
+             уезжали 0 и null. */
+          onChange={(next) => onChange(next === null ? undefined : next)}
         />
       );
     case 'checkbox':
@@ -94,7 +91,7 @@ function FieldControl({
             type="checkbox"
             checked={Boolean(value)}
             onChange={(e) => onChange(e.target.checked)}
-            className="accent-aurora size-4"
+            className="check"
           />
           {field.label}
         </label>

@@ -210,10 +210,10 @@ export function RequestForm({
 
       <div className="flex items-end gap-6 pb-3">
         <label className="text-ink-2 flex cursor-pointer items-center gap-2 text-[14.5px]">
-          <input type="checkbox" name="meals" className="accent-aurora size-4" /> Питание
+          <input type="checkbox" name="meals" className="check" /> Питание
         </label>
         <label className="text-ink-2 flex cursor-pointer items-center gap-2 text-[14.5px]">
-          <input type="checkbox" name="banya" className="accent-aurora size-4" /> Баня
+          <input type="checkbox" name="banya" className="check" /> Баня
         </label>
       </div>
 
@@ -257,7 +257,7 @@ export function RequestForm({
       </div>
 
       <label className="text-ink-3 flex cursor-pointer items-start gap-3 text-[13px] md:col-span-2">
-        <input type="checkbox" name="consent" required className="accent-aurora mt-0.5 size-4" />
+        <input type="checkbox" name="consent" required className="check mt-0.5" />
         <span>
           Согласен на обработку персональных данных в соответствии с{' '}
           <Link href="/policy" className="text-ice underline">

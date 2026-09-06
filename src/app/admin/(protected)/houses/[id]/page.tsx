@@ -8,6 +8,7 @@ import { loadMediaOptions } from '@/lib/admin/media-options';
 import { saveHouse, saveHouseBlocks } from '@/lib/admin/content-actions';
 import { AdminHeading, Field, Input, Panel, Select, Textarea } from '@/components/admin/ui';
 import { CoverField } from '@/components/admin/CoverField';
+import { NumberField } from '@/components/form/NumberField';
 import { MetaFields } from '@/components/admin/MetaFields';
 import { BlockEditor } from '@/components/admin/BlockEditor';
 import { EntityForm } from '@/components/admin/EntityForm';
@@ -59,10 +60,23 @@ export default async function HouseEditor({ params }: { params: Promise<{ id: st
           </div>
 
           <Field label="Вместимость, гостей">
-            <Input name="capacity" type="number" min={1} max={30} defaultValue={house?.capacity ?? 4} required />
+            <NumberField
+              name="capacity"
+              min={1}
+              max={30}
+              defaultValue={house?.capacity ?? 4}
+              required
+              suffix="чел."
+            />
           </Field>
           <Field label="Цена, ₽ за человека в сутки" hint="Пусто — цена не показывается">
-            <Input name="pricePerNight" type="number" min={0} defaultValue={house?.pricePerNight ?? ''} />
+            <NumberField
+              name="pricePerNight"
+              min={0}
+              step={100}
+              defaultValue={house?.pricePerNight ?? ''}
+              suffix="₽"
+            />
           </Field>
 
           <Field label="Состояние">

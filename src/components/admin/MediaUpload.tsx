@@ -3,7 +3,8 @@
 import { useFormAction } from '@/lib/use-form-action';
 import { useToast } from './Toast';
 import { uploadMedia, type UploadState } from '@/lib/admin/media-actions';
-import { Field, Input, Submit, inputClass } from './ui';
+import { Field, Input, Submit } from './ui';
+import { FileField } from '@/components/form/FileField';
 
 const initial: UploadState = { uploaded: 0, errors: [] };
 
@@ -21,19 +22,16 @@ export function MediaUpload() {
       onSubmit={onSubmit}
       className="border-line-2 mb-7 grid gap-4 rounded-[14px] border border-dashed p-5 md:grid-cols-[1fr_1fr_auto] md:items-end"
     >
-      <Field
-        label="Файлы"
-        hint="JPEG, PNG, WebP, HEIC. До 20 МБ каждый; за один раз — не больше 30 МБ суммарно, тяжёлые снимки грузите партиями."
-      >
-        <input
-          type="file"
+      <div className="md:col-span-2">
+        <span className="text-ink mb-1.5 block text-[13px] font-semibold">Файлы</span>
+        <FileField
           name="files"
-          multiple
           accept="image/*"
+          multiple
           required
-          className={`${inputClass} file:mr-3 file:cursor-pointer file:rounded-full file:border-0 file:bg-bg-4 file:px-3 file:py-1 file:text-ink`}
+          hint="JPEG, PNG, WebP, HEIC. До 20 МБ каждый; за один раз не больше 30 МБ суммарно — тяжёлые снимки грузите партиями."
         />
-      </Field>
+      </div>
 
       <Field label="Описание для всех" hint="Что на фото — нужно для поиска и незрячих посетителей.">
         <Input name="alt" placeholder="Эко-дом №1, вид снаружи" />

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Input, Submit, Textarea } from './ui';
 import { Dropdown } from '@/components/form/Dropdown';
+import { NumberField } from '@/components/form/NumberField';
 import { ActionForm } from './ActionForm';
 import { Icon, type IconName } from './icons';
 
@@ -40,7 +41,7 @@ function Cell({ column, value }: { column: Column; value: string | number | bool
           type="checkbox"
           name={column.name}
           defaultChecked={Boolean(value)}
-          className="accent-aurora size-4"
+          className="check"
         />
         {column.label}
       </label>
@@ -68,10 +69,20 @@ function Cell({ column, value }: { column: Column; value: string | number | bool
     );
   }
 
+  if (column.type === 'number') {
+    return (
+      <NumberField
+        name={column.name}
+        defaultValue={value == null ? '' : String(value)}
+        placeholder={column.placeholder}
+        min={0}
+      />
+    );
+  }
+
   return (
     <Input
       name={column.name}
-      type={column.type === 'number' ? 'number' : 'text'}
       placeholder={column.placeholder ?? column.label}
       defaultValue={value == null ? '' : String(value)}
     />

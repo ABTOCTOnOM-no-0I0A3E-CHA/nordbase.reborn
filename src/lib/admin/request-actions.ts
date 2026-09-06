@@ -16,6 +16,39 @@ export async function setRequestStatus(formData: FormData): Promise<void> {
   revalidatePath('/admin');
 }
 
+/* Копия заявки. Пригождается, когда гость возвращается: те же контакты,
+   а даты и домик правятся уже в копии. Копия всегда заводится новой,
+   даже если исходная закрыта. */
+export async function duplicateRequest(formData: FormData): Promise<void> {
+  await requireUser();
+  const id = z.uuid().parse(formData.get('id'));
+
+  const rows = await db.select().from(requests).where(eq(requests.id, id)).limit(1);
+  const source = rows[0];
+  if (!source) return;
+
+  await db.insert(requests).values({
+    direction: source.direction,
+    tourId: source.tourId,
+    houseId: source.houseId,
+    dateFrom: source.dateFrom,
+    dateTo: source.dateTo,
+    guests: source.guests,
+    meals: source.meals,
+    banya: source.banya,
+    name: source.name,
+    phone: source.phone,
+    comment: source.comment,
+    status: 'new',
+    /* Согласие получено от того же гостя — переносим момент как есть,
+       новую отметку тут ставить нельзя: гость ничего не подтверждал. */
+    consentAt: source.consentAt,
+  });
+
+  revalidatePath('/admin/requests');
+  revalidatePath('/admin');
+}
+
 export async function deleteRequest(formData: FormData): Promise<void> {
   await requireUser();
   await db.delete(requests).where(eq(requests.id, z.uuid().parse(formData.get('id'))));

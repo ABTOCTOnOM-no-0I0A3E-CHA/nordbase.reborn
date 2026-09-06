@@ -3,6 +3,7 @@ import { getSessionUser } from '@/lib/auth/session';
 import { saveSettings } from '@/lib/admin/settings-actions';
 import { AdminHeading, Field, Input, Panel, Submit, Textarea } from '@/components/admin/ui';
 import { MenuFields } from '@/components/admin/MenuFields';
+import { NumberField } from '@/components/form/NumberField';
 import { ActionForm } from '@/components/admin/ActionForm';
 
 export const metadata = { title: 'Настройки' };
@@ -85,10 +86,10 @@ export default async function SettingsPage() {
             </Field>
 
             <Field label="Широта">
-              <Input name="lat" type="number" step="any" defaultValue={settings.lat} />
+              <NumberField name="lat" step={0.0001} defaultValue={settings.lat} />
             </Field>
             <Field label="Долгота">
-              <Input name="lng" type="number" step="any" defaultValue={settings.lng} />
+              <NumberField name="lng" step={0.0001} defaultValue={settings.lng} />
             </Field>
 
             <div className="sm:col-span-2">

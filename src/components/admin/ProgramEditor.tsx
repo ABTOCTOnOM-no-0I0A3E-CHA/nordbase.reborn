@@ -84,7 +84,7 @@ export function ProgramEditor({
                         ),
                       })
                     }
-                    className="accent-aurora size-3.5"
+                    className="check"
                   />
                   финиш
                 </label>

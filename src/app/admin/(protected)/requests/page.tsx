@@ -4,7 +4,7 @@ import { houses, requests, tours } from '@/db/schema';
 import { AdminHeading, EmptyState, Panel, Select, Submit } from '@/components/admin/ui';
 import { ActionForm } from '@/components/admin/ActionForm';
 import { Icon } from '@/components/admin/icons';
-import { deleteRequest, setRequestStatus } from '@/lib/admin/request-actions';
+import { deleteRequest, duplicateRequest, setRequestStatus } from '@/lib/admin/request-actions';
 
 export const metadata = { title: 'Заявки' };
 
@@ -173,6 +173,17 @@ export default async function RequestsPage() {
                         />
                       </span>
                       <Submit variant="ghost">Обновить</Submit>
+                    </ActionForm>
+
+                    <ActionForm action={duplicateRequest} success="Создана копия заявки">
+                      <input type="hidden" name="id" value={request.id} />
+                      <button
+                        type="submit"
+                        title="Завести такую же заявку — например, для повторного гостя"
+                        className="border-line-2 text-ink-2 hover:border-ink-3 hover:text-ink cursor-pointer rounded-full border px-3.5 py-1.5 text-[12.5px] font-semibold transition"
+                      >
+                        Дублировать
+                      </button>
                     </ActionForm>
 
                     <ActionForm

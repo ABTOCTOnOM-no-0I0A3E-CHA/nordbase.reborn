@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Popover } from './Popover';
 
 /* Своё поле даты вместо нативного.
 
@@ -8,6 +9,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
    у гостя с английской локалью это mm/dd/yyyy, и «05.10» он прочитает как
    5 октября или как 10 мая — угадать нельзя. Здесь формат всегда дд.мм.гггг,
    а календарь начинается с понедельника, как принято у нас.
+
+   Календарь всплывает порталом (см. Popover): карточки и панели вокруг
+   обрезали обычный absolute-блок.
 
    Наружу отдаём ISO (ГГГГ-ММ-ДД) скрытым полем — сервер получает ровно то,
    что и раньше. */
@@ -87,29 +91,13 @@ export function DateField({
   const [text, setText] = useState(isoToHuman(iso));
   const [open, setOpen] = useState(false);
   const [view, setView] = useState(() => startOfMonth(iso));
-  const rootRef = useRef<HTMLDivElement>(null);
+  const anchorRef = useRef<HTMLDivElement>(null);
 
   /* Значение поменяли снаружи — подтягиваем видимый текст. */
   useEffect(() => {
     setText(isoToHuman(iso));
     if (iso) setView(startOfMonth(iso));
   }, [iso]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('mousedown', onPointerDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onPointerDown);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
 
   function commit(next: string) {
     if (controlled === undefined) setInner(next);
@@ -126,10 +114,10 @@ export function DateField({
   }, [view]);
 
   return (
-    <div ref={rootRef} className="relative">
+    <>
       <input type="hidden" name={name} value={iso} required={required} />
 
-      <div className="relative">
+      <div ref={anchorRef} className="relative">
         <input
           id={id}
           inputMode="numeric"
@@ -169,8 +157,15 @@ export function DateField({
         </button>
       </div>
 
-      {open ? (
-        <div className="border-line-2 bg-bg-3 absolute top-full left-0 z-30 mt-1.5 w-[290px] rounded-[12px] border p-3 shadow-[0_14px_32px_rgb(0_0_0/0.5)]">
+      <Popover
+        anchorRef={anchorRef}
+        open={open}
+        onClose={() => setOpen(false)}
+        matchWidth={false}
+        width={296}
+        maxHeight={360}
+      >
+        <div className="p-2">
           <div className="mb-2 flex items-center justify-between">
             <button
               type="button"
@@ -250,7 +245,7 @@ export function DateField({
             </button>
           ) : null}
         </div>
-      ) : null}
-    </div>
+      </Popover>
+    </>
   );
 }

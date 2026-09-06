@@ -16,7 +16,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_STYLE: Record<string, string> = {
-  new: 'bg-ice text-bg',
+  new: 'bg-ice text-bg uppercase tracking-[0.06em]',
   in_work: 'bg-amber/15 text-amber',
   confirmed: 'bg-ok/15 text-ok',
   cancelled: 'bg-busy/15 text-busy',
@@ -77,8 +77,8 @@ export default async function RequestsPage() {
       ) : (
         <div className="grid gap-3">
           {fresh > 0 ? (
-            <p className="text-ice mb-1 text-[13.5px] font-semibold">
-              Ждут ответа: {fresh} — они наверху и отмечены голубой полосой.
+            <p className="border-ice/40 bg-ice/15 text-ice mb-1 rounded-[12px] border px-4 py-3 text-[14px] font-semibold">
+              Ждут ответа: {fresh}. Они наверху списка и подсвечены голубым.
             </p>
           ) : null}
 
@@ -90,16 +90,20 @@ export default async function RequestsPage() {
                 key={request.id}
                 /* Новая заявка отличается не только словом в углу: рамка,
                    полоса слева и фон. Иначе в списке всё сливается. */
+                /* Новая заявка не должна теряться в списке: толстая яркая
+                   грань слева, заметно светлее фон и подсветка по краю. */
                 className={`relative overflow-hidden rounded-[16px] border transition ${
-                  isNew ? 'border-ice/45 bg-ice/[0.06]' : 'border-line bg-bg-3'
+                  isNew
+                    ? 'border-ice bg-ice/15 shadow-[0_0_0_1px_var(--color-ice)_inset,0_10px_30px_rgb(0_0_0/0.35)]'
+                    : 'border-line bg-bg-3'
                 }`}
               >
-                {isNew ? <span className="bg-ice absolute inset-y-0 left-0 w-1" /> : null}
+                {isNew ? <span className="bg-ice absolute inset-y-0 left-0 w-1.5" /> : null}
 
-                <div className={`p-5 ${isNew ? 'pl-6' : ''}`}>
+                <div className={`p-5 ${isNew ? 'pl-7' : ''}`}>
                   <div className="mb-3 flex flex-wrap items-center gap-3">
                     {isNew ? (
-                      <span className="bg-ice/20 text-ice flex size-9 flex-none items-center justify-center rounded-full">
+                      <span className="bg-ice text-bg flex size-9 flex-none items-center justify-center rounded-full">
                         <Icon name="requests" className="size-[18px]" />
                       </span>
                     ) : null}

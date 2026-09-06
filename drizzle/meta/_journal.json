@@ -15,6 +15,13 @@
       "when": 1788618997163,
       "tag": "0001_bookings_no_overlap",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788695272165,
+      "tag": "0002_petite_pyro",
+      "breakpoints": true
     }
   ]
 }

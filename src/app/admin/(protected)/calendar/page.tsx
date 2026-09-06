@@ -1,65 +1,32 @@
-import { asc, eq, gte } from 'drizzle-orm';
+import { asc, gte } from 'drizzle-orm';
 import { db } from '@/db';
 import { bookings, houses } from '@/db/schema';
-import { AdminHeading, Panel } from '@/components/admin/ui';
+import { AdminHeading, EmptyState, Panel } from '@/components/admin/ui';
 import { ActionForm } from '@/components/admin/ActionForm';
-import { occupiedDates, todayIso } from '@/lib/dates';
+import { Occupancy } from '@/components/admin/Occupancy';
+import { todayIso } from '@/lib/dates';
 import { BookingForm } from '@/components/admin/BookingForm';
 import { deleteBooking } from '@/lib/admin/request-actions';
 
 export const metadata = { title: 'Занятость' };
 
-const MONTHS = [
-  'январь',
-  'февраль',
-  'март',
-  'апрель',
-  'май',
-  'июнь',
-  'июль',
-  'август',
-  'сентябрь',
-  'октябрь',
-  'ноябрь',
-  'декабрь',
-];
-
-/* Дата в виде ГГГГ-ММ-ДД без часовых поясов: бронь — это календарный день,
-   а не момент времени, и переводить её в Date значит однажды уехать на сутки. */
-function isoDate(year: number, month: number, day: number): string {
-  return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-}
-
-function daysInMonth(year: number, month: number): number {
-  return new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+function formatDate(value: string): string {
+  const [year, month, day] = value.split('-');
+  return `${day}.${month}.${year}`;
 }
 
 export default async function CalendarPage() {
-  const today = new Date(`${todayIso()}T00:00:00Z`);
-  const startIso = isoDate(today.getUTCFullYear(), today.getUTCMonth(), 1);
+  const today = todayIso();
+  /* Показываем и прошлый месяц: календарь листается назад. */
+  const from = `${today.slice(0, 8)}01`;
 
   const [houseRows, bookingRows] = await Promise.all([
     db.select().from(houses).orderBy(asc(houses.sort)),
-    db.select().from(bookings).where(gte(bookings.dateTo, startIso)).orderBy(asc(bookings.dateFrom)),
+    db.select().from(bookings).where(gte(bookings.dateTo, from)).orderBy(asc(bookings.dateFrom)),
   ]);
 
-  /* Разворачиваем интервалы в множество занятых дат по каждому домику —
-     на трёх месяцах это сотни значений, проверять принадлежность так проще всего. */
-  const busy = new Map<string, Set<string>>();
-  for (const booking of bookingRows) {
-    if (booking.status === 'cancelled') continue;
-    const set = busy.get(booking.houseId) ?? new Set<string>();
-    /* Полуоткрытый интервал: день выезда уже свободен. */
-    for (const date of occupiedDates(booking.dateFrom, booking.dateTo)) set.add(date);
-    busy.set(booking.houseId, set);
-  }
-
-  const months = [0, 1, 2].map((offset) => {
-    const date = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + offset, 1));
-    return { year: date.getUTCFullYear(), month: date.getUTCMonth() };
-  });
-
   const houseById = new Map(houseRows.map((h) => [h.id, h.title]));
+  const upcoming = bookingRows.filter((booking) => booking.status !== 'cancelled');
 
   return (
     <div>
@@ -68,86 +35,67 @@ export default async function CalendarPage() {
         description="Даты вы отмечаете сами — автоматически ничего не бронируется. Что отмечено здесь, то гость видит на сайте как занятое."
       />
 
-      <div className="mb-8 grid gap-6">
-        {months.map(({ year, month }) => (
-          <Panel key={`${year}-${month}`}>
-            <h2 className="mb-4 text-[15px] font-bold">
-              {MONTHS[month]} {year}
-            </h2>
-            <div className="grid gap-3">
-              {houseRows.map((house) => {
-                const set = busy.get(house.id) ?? new Set<string>();
-                return (
-                  <div key={house.id} className="flex flex-wrap items-center gap-2">
-                    <span className="text-ink-2 w-32 flex-none text-[13px]">{house.title}</span>
-                    <div className="flex flex-wrap gap-1">
-                      {Array.from({ length: daysInMonth(year, month) }, (_, i) => {
-                        const iso = isoDate(year, month, i + 1);
-                        const occupied = set.has(iso);
-                        return (
-                          <span
-                            key={iso}
-                            title={`${iso}: ${occupied ? 'занято' : 'свободно'}`}
-                            className={`flex size-6 items-center justify-center rounded-[5px] text-[10.5px] ${
-                              occupied ? 'bg-busy/20 text-busy' : 'bg-ok/10 text-ok'
-                            }`}
-                          >
-                            {i + 1}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </Panel>
-        ))}
+      <div className="mb-6">
+        <Occupancy
+          today={today}
+          houses={houseRows.map((house) => ({ id: house.id, title: house.title }))}
+          bookings={bookingRows.map((booking) => ({
+            id: booking.id,
+            houseId: booking.houseId,
+            dateFrom: booking.dateFrom,
+            dateTo: booking.dateTo,
+            guests: booking.guests,
+            status: booking.status,
+            note: booking.note,
+          }))}
+          /* Вместимость вездехода из брифа: базово 4, в поездку берут до 8. */
+          vehicleCapacity={8}
+        />
       </div>
 
-      <Panel className="mb-8">
-        <h2 className="mb-1 text-[15px] font-bold">Добавить бронь</h2>
-        <p className="text-ink-3 mb-4 text-[13px]">
-          Подтвердили заезд по телефону — отметьте даты здесь, чтобы они пропали из свободных.
-        </p>
+      <Panel
+        className="mb-6"
+        title="Отметить занятые даты"
+        description="Подтвердили заезд по телефону — впишите даты здесь, и они пропадут из свободных на сайте."
+      >
         <BookingForm houses={houseRows.map((h) => ({ id: h.id, title: h.title }))} />
       </Panel>
 
-      <Panel>
-        <h2 className="mb-4 text-[15px] font-bold">Ближайшие брони</h2>
-        {bookingRows.length === 0 ? (
-          <p className="text-ink-3 text-[13.5px]">Броней нет.</p>
+      <Panel title="Все брони" description="Ближайшие сверху.">
+        {upcoming.length === 0 ? (
+          <EmptyState
+            icon="calendar"
+            title="Занятых дат нет"
+            description="Пока вы ничего не отметили, гость видит все даты свободными."
+          />
         ) : (
           <div className="grid gap-2">
-            {bookingRows.map((booking) => (
+            {upcoming.map((booking) => (
               <div
                 key={booking.id}
-                className="border-line flex flex-wrap items-center gap-3 border-b pb-2 text-[13.5px] last:border-b-0"
+                className="border-line flex flex-wrap items-center gap-3 border-b pb-2.5 text-[13.5px] last:border-b-0 last:pb-0"
               >
+                <span
+                  className={`size-2.5 flex-none rounded-full ${
+                    booking.status === 'confirmed' ? 'bg-busy' : 'bg-amber'
+                  }`}
+                />
                 <b>{houseById.get(booking.houseId) ?? 'домик удалён'}</b>
                 <span className="text-ink-2">
-                  {booking.dateFrom} — {booking.dateTo}
+                  {formatDate(booking.dateFrom)} — {formatDate(booking.dateTo)}
                 </span>
+                {booking.guests ? (
+                  <span className="text-ink-3">{booking.guests} чел.</span>
+                ) : null}
                 {booking.note ? <span className="text-ink-3">{booking.note}</span> : null}
-                <span
-                  className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                    booking.status === 'confirmed'
-                      ? 'bg-ok/15 text-ok'
-                      : booking.status === 'hold'
-                        ? 'bg-amber/15 text-amber'
-                        : 'bg-busy/15 text-busy'
-                  }`}
-                >
-                  {booking.status === 'confirmed'
-                    ? 'подтверждена'
-                    : booking.status === 'hold'
-                      ? 'придержана'
-                      : 'отменена'}
+                <span className="text-ink-3 text-[12px]">
+                  {booking.status === 'confirmed' ? 'подтверждена' : 'придержана'}
                 </span>
+
                 <ActionForm
                   action={deleteBooking}
                   success="Даты снова свободны"
-                  confirm="Удалить бронь? Даты снова станут свободными."
+                  confirm="Убрать бронь? Даты снова станут свободными."
                   className="ml-auto"
                 >
                   <input type="hidden" name="id" value={booking.id} />
@@ -155,7 +103,7 @@ export default async function CalendarPage() {
                     type="submit"
                     className="border-busy/40 text-busy hover:bg-busy/10 hover:border-busy/70 cursor-pointer rounded-full border px-3.5 py-1.5 text-[12.5px] font-semibold transition"
                   >
-                    Удалить
+                    Убрать
                   </button>
                 </ActionForm>
               </div>

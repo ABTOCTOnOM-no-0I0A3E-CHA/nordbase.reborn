@@ -65,6 +65,7 @@ const bookingSchema = z
     requestId: z.union([z.uuid(), z.literal('')]).default(''),
     dateFrom: z.iso.date('Укажите дату заезда'),
     dateTo: z.iso.date('Укажите дату выезда'),
+    guests: z.coerce.number().int().min(0).max(60).default(0),
     status: z.enum(['hold', 'confirmed', 'cancelled']),
     note: z.string().trim().max(500).default(''),
   })
@@ -101,6 +102,7 @@ export async function saveBooking(_prev: BookingState, formData: FormData): Prom
     requestId: input.requestId || null,
     dateFrom: input.dateFrom,
     dateTo: input.dateTo,
+    guests: input.guests,
     status: input.status,
     note: input.note,
   };

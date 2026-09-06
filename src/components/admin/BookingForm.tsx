@@ -6,6 +6,7 @@ import { useToast } from './Toast';
 import { saveBooking, type BookingState } from '@/lib/admin/request-actions';
 import { Field, Input, Select, Submit } from './ui';
 import { DateField } from '@/components/form/DateField';
+import { NumberField } from '@/components/form/NumberField';
 
 const initial: BookingState = {};
 
@@ -52,6 +53,13 @@ export function BookingForm({ houses }: { houses: { id: string; title: string }[
       </Field>
       <Field label="Выезд" hint="День выезда свободен — в него может заехать следующий гость.">
         <DateField name="dateTo" value={to} onChange={setTo} min={from} required />
+      </Field>
+
+      <Field
+        label="Сколько человек"
+        hint="Нужно, чтобы видеть, влезает ли группа в вездеход за одну поездку."
+      >
+        <NumberField name="guests" min={0} max={60} defaultValue={2} suffix="чел." />
       </Field>
 
       <div className="sm:col-span-2">

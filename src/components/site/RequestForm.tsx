@@ -81,8 +81,19 @@ export function RequestForm({
 
   /* Предупреждаем сразу, а не после отправки: занятые даты видны гостю,
      и он не тратит время на заявку, которую всё равно придётся переносить. */
+  const wanted = nights(dateFrom, dateTo);
   const busy = houseId ? (busyByHouse[houseId] ?? []) : [];
-  const clash = nights(dateFrom, dateTo).filter((date) => busy.includes(date));
+  const clash = wanted.filter((date) => busy.includes(date));
+
+  /* Домиков несколько, и в пик заняты бывают все сразу. Если конкретный домик
+     не выбран, проверяем, остаётся ли хоть один свободный на все выбранные
+     ночи — иначе гость увидит «всё свободно» там, где мест нет. */
+  const anyFree =
+    wanted.length === 0 ||
+    houses.some((house) => {
+      const taken = busyByHouse[house.id] ?? [];
+      return wanted.every((date) => !taken.includes(date));
+    });
 
   if (done) {
     return (
@@ -179,6 +190,10 @@ export function RequestForm({
           Выбранный домик занят{' '}
           {clash.length === 1 ? 'на дату' : `на ${clash.length} из выбранных дат`}. Заявку оставить
           можно — предложим свободные даты или другой домик.
+        </p>
+      ) : !anyFree ? (
+        <p className="text-amber bg-amber/10 rounded-[10px] px-4 py-3 text-[13.5px] md:col-span-2">
+          На эти даты заняты все домики. Оставьте заявку — подскажем ближайшие свободные числа.
         </p>
       ) : null}
 

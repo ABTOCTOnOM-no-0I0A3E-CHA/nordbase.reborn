@@ -1,13 +1,17 @@
 'use client';
 
 import { useEffect, useId, useRef, useState } from 'react';
+import { Popover } from './Popover';
 
-/* Свой выпадающий список вместо нативного select.
+/* Свой выпадающий список вместо нативного.
 
    Нативный список рисует операционная система: он игнорирует тему сайта,
    на Windows остаётся светлым на тёмной странице, а на разных платформах
    выглядит по-разному. Здесь список — обычный HTML, поэтому он одинаковый
    везде и в нашей палитре.
+
+   Сам список всплывает порталом (см. Popover): внутри карточек и панелей
+   есть overflow: hidden, и обычный absolute-блок они обрезали.
 
    Значение уезжает на сервер скрытым полем, так что форма остаётся обычной
    формой и работает через Server Actions без изменений. */
@@ -42,7 +46,7 @@ export function Dropdown({
 
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
-  const rootRef = useRef<HTMLDivElement>(null);
+  const anchorRef = useRef<HTMLButtonElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
   const selected = options.find((option) => option.value === value);
@@ -53,32 +57,17 @@ export function Dropdown({
     setOpen(false);
   }
 
-  /* Закрываем по клику мимо и по Esc — иначе список остаётся висеть
-     поверх страницы и перекрывает соседние поля. */
-  useEffect(() => {
-    if (!open) return;
-
-    const onPointerDown = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
-    };
-
-    document.addEventListener('mousedown', onPointerDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onPointerDown);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
-
   /* Открыли список — подсветка встаёт на выбранный пункт и он виден. */
   useEffect(() => {
     if (!open) return;
     const index = options.findIndex((option) => option.value === value);
-    setActive(index < 0 ? 0 : index);
-    listRef.current?.children[index < 0 ? 0 : index]?.scrollIntoView({ block: 'nearest' });
+    const next = index < 0 ? 0 : index;
+    setActive(next);
+    /* Ждём кадр: список рисуется порталом и на этот момент ещё не в DOM. */
+    const frame = requestAnimationFrame(() => {
+      listRef.current?.children[next]?.scrollIntoView({ block: 'nearest' });
+    });
+    return () => cancelAnimationFrame(frame);
   }, [open, options, value]);
 
   function onKeyDown(event: React.KeyboardEvent) {
@@ -112,12 +101,13 @@ export function Dropdown({
   }
 
   return (
-    <div ref={rootRef} className="relative">
+    <>
       {/* Значение для формы. required вешаем сюда же, чтобы браузер сам
           не давал отправить форму с пустым обязательным списком. */}
       <input type="hidden" name={name} value={value} required={required} />
 
       <button
+        ref={anchorRef}
         type="button"
         id={id}
         disabled={disabled}
@@ -130,7 +120,9 @@ export function Dropdown({
           open ? 'border-aurora/60' : ''
         }`}
       >
-        <span className={selected ? '' : 'text-ink-3'}>{selected?.label ?? placeholder}</span>
+        <span className={`truncate ${selected ? '' : 'text-ink-3'}`}>
+          {selected?.label ?? placeholder}
+        </span>
         <svg
           viewBox="0 0 12 8"
           className={`size-3 flex-none transition-transform ${open ? 'rotate-180' : ''}`}
@@ -145,13 +137,8 @@ export function Dropdown({
         </svg>
       </button>
 
-      {open ? (
-        <ul
-          ref={listRef}
-          id={listId}
-          role="listbox"
-          className="border-line-2 bg-bg-3 absolute top-full right-0 left-0 z-30 mt-1.5 max-h-64 overflow-y-auto rounded-[10px] border p-1 shadow-[0_12px_28px_rgb(0_0_0/0.45)]"
-        >
+      <Popover anchorRef={anchorRef} open={open} onClose={() => setOpen(false)}>
+        <ul ref={listRef} id={listId} role="listbox">
           {options.map((option, index) => {
             const isSelected = option.value === value;
             return (
@@ -169,14 +156,14 @@ export function Dropdown({
                     index === active ? 'bg-bg-4 text-ink' : 'text-ink-2'
                   }`}
                 >
-                  {option.label}
-                  {isSelected ? <span className="text-aurora">✓</span> : null}
+                  <span className="truncate">{option.label}</span>
+                  {isSelected ? <span className="text-aurora flex-none">✓</span> : null}
                 </button>
               </li>
             );
           })}
         </ul>
-      ) : null}
-    </div>
+      </Popover>
+    </>
   );
 }

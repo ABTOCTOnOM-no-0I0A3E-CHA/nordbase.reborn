@@ -285,6 +285,10 @@ export const bookings = pgTable(
     requestId: uuid('request_id').references(() => requests.id, { onDelete: 'set null' }),
     dateFrom: date('date_from').notNull(),
     dateTo: date('date_to').notNull(),
+    /* Сколько человек в этой брони. Домик — не единственный ограниченный
+       ресурс: вездеход берёт до 8 человек за поездку, поэтому владельцу нужно
+       видеть не только «занято», но и сколько людей стоит на дату. */
+    guests: integer('guests').notNull().default(0),
     status: bookingStatusEnum('status').notNull().default('hold'),
     note: text('note').notNull().default(''),
   },

@@ -350,7 +350,7 @@ export function BlockEditor({
         <select
           value={adding}
           onChange={(e) => setAdding(e.target.value as BlockType)}
-          className={`${inputClass} max-w-56`}
+          className={`${inputClass} select max-w-56`}
         >
           {BLOCK_ORDER.map((type) => (
             <option key={type} value={type}>

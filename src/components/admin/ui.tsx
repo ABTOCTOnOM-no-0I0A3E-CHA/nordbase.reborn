@@ -34,7 +34,7 @@ export function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement
 }
 
 export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select {...props} className={`${inputClass} ${props.className ?? ''}`} />;
+  return <select {...props} className={`${inputClass} select ${props.className ?? ''}`} />;
 }
 
 /* По умолчанию состояние берём из useFormStatus — кнопка сама знает, что

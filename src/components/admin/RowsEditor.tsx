@@ -40,7 +40,7 @@ function Cell({ column, value }: { column: Column; value: string | number | bool
       <select
         name={column.name}
         defaultValue={value == null ? '' : String(value)}
-        className={inputClass}
+        className={`${inputClass} select`}
       >
         {(column.options ?? []).map((option) => (
           <option key={option.value} value={option.value}>

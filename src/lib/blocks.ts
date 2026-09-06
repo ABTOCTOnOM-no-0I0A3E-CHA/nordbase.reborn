@@ -25,6 +25,9 @@ export const heroBlock = z.object({
   mediaId,
   /* анимированное северное сияние поверх фото */
   aurora: z.boolean().default(true),
+  /* full — на весь экран, compact — примерно две трети: подходит для
+     внутренних страниц, где сразу под обложкой начинается содержимое. */
+  height: z.enum(['full', 'compact']).default('full'),
   primaryLabel: optionalText,
   primaryHref: optionalText,
   secondaryLabel: optionalText,

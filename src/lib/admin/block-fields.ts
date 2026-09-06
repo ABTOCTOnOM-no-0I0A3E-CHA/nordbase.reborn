@@ -33,6 +33,15 @@ export const BLOCK_FIELDS: Record<BlockType, FieldDef[]> = {
     ...heading,
     { kind: 'textarea', name: 'lead', label: 'Вводный текст', rows: 3 },
     { kind: 'media', name: 'mediaId', label: 'Фон' },
+    {
+      kind: 'select',
+      name: 'height',
+      label: 'Высота',
+      options: [
+        { value: 'full', label: 'На весь экран' },
+        { value: 'compact', label: 'Пониже' },
+      ],
+    },
     { kind: 'checkbox', name: 'aurora', label: 'Анимированное северное сияние' },
     { kind: 'text', name: 'primaryLabel', label: 'Главная кнопка' },
     { kind: 'text', name: 'primaryHref', label: 'Ссылка главной кнопки', placeholder: '#request' },

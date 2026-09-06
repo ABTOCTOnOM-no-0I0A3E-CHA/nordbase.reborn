@@ -659,6 +659,7 @@ await db.insert(s.pages).values([
         lead: 'Три эко-дома, баня и питание. Вместимость от 4 до 6 человек.',
         mediaId: heroRybachiy,
         aurora: false,
+        height: 'compact',
         primaryLabel: 'Оставить заявку',
         primaryHref: '/#request',
         secondaryLabel: '',
@@ -678,7 +679,14 @@ await db.insert(s.pages).values([
         ],
       },
       { type: 'gallery', ...heading('Что вокруг', 'Полуостров в фотографиях'), mediaIds: galleryIds },
-      { type: 'cta', ...heading('', 'Готовы приехать?'), label: 'Оставить заявку', href: '/#request' },
+      {
+        type: 'requestForm',
+        ...heading(
+          'Заявка',
+          'Готовы приехать?',
+          'Заполните форму — ответим и предложим свободные даты.',
+        ),
+      },
     ],
   },
   {
@@ -719,6 +727,7 @@ await db.insert(s.pages).values([
         lead: 'Северное сияние, кладбище кораблей, водопад у самого моря и Китовый мыс. Териберка меняется каждые три месяца до неузнаваемости.',
         mediaId: heroTeriberka,
         aurora: true,
+        height: 'compact',
         primaryLabel: 'Оставить заявку',
         primaryHref: '/#request',
         secondaryLabel: '',
@@ -793,7 +802,7 @@ await db.insert(s.pages).values([
           { value: '40 000 ₽', label: 'в день на группу' },
         ],
       },
-      { type: 'cta', ...heading('', 'Спросить про заброску'), label: 'Оставить заявку', href: '/#request' },
+      { type: 'requestForm', ...heading('Заявка', 'Спросить про заброску') },
     ],
   },
   {

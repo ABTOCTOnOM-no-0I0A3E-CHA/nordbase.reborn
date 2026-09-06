@@ -106,6 +106,38 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ---------- выпадающие списки ----------
+   Системный вид селекта не вписывается в тёмную тему: у него своя рамка,
+   своя стрелка и светлый фон в некоторых браузерах. Убираем оформление
+   целиком и рисуем стрелку сами. */
+.select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 38px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%239db1bd' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 12px 8px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.select:hover {
+  border-color: var(--color-line-2);
+}
+
+/* Список вариантов рисует система; на Windows она уважает эти цвета,
+   без них он остаётся светлым на тёмной странице. */
+.select option {
+  background: var(--color-bg-3);
+  color: var(--color-ink);
+}
+
+.select:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 ::selection {
   background: var(--color-aurora);
   color: var(--color-aurora-ink);

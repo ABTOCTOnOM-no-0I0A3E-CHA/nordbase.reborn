@@ -28,7 +28,13 @@ function Hero({ block, data }: { block: Extract<Block, { type: 'hero' }>; data: 
   const cover = block.mediaId ? data.media.get(block.mediaId) : undefined;
 
   return (
-    <section className="relative flex min-h-[min(88vh,760px)] items-end overflow-hidden">
+    <section
+      className={`relative flex items-end overflow-hidden ${
+        /* svh, а не vh: на телефоне адресная строка то появляется, то прячется,
+           и обложка на 100vh прыгала бы при каждом скролле. */
+        block.height === 'compact' ? 'min-h-[min(72svh,620px)]' : 'min-h-svh'
+      }`}
+    >
       <div className="absolute inset-0 z-0">
         {cover ? (
           <Picture

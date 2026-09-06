@@ -10,6 +10,8 @@ const initial: RequestState = { ok: false };
 
 const field =
   'w-full rounded-[10px] border border-line-2 bg-bg-3 px-3 py-3 text-[15px] text-ink focus:border-transparent focus:outline-2 focus:outline-aurora';
+/* Тот же вид, что у обычных полей, плюс своя стрелка вместо системной. */
+const selectField = `${field} select`;
 const label = 'mb-2 block text-[12.5px] font-semibold text-ink-3';
 
 /* Ночи между заездом и выездом: день выезда домик уже не занимает. */
@@ -72,7 +74,12 @@ export function RequestForm({
         <label className={label} htmlFor="direction">
           Куда едете
         </label>
-        <select id="direction" name="direction" className={field} defaultValue={directions[0] ?? ''}>
+        <select
+          id="direction"
+          name="direction"
+          className={selectField}
+          defaultValue={directions[0] ?? ''}
+        >
           {directions.map((direction) => (
             <option key={direction} value={direction}>
               {direction}
@@ -86,7 +93,7 @@ export function RequestForm({
           <label className={label} htmlFor="tourId">
             Тур
           </label>
-          <select id="tourId" name="tourId" className={field} defaultValue="">
+          <select id="tourId" name="tourId" className={selectField} defaultValue="">
             <option value="">Не выбран</option>
             {tours.map((tour) => (
               <option key={tour.id} value={tour.id}>
@@ -105,7 +112,7 @@ export function RequestForm({
           <select
             id="houseId"
             name="houseId"
-            className={field}
+            className={selectField}
             value={houseId}
             onChange={(e) => setHouseId(e.target.value)}
           >

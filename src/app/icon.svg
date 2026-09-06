@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="nb" x1="6" y1="4" x2="58" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5fa88b" />
+      <stop offset="0.55" stop-color="#7fa9c4" />
+      <stop offset="1" stop-color="#8b84b5" />
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="30" fill="url(#nb)" />
+  <circle
+    cx="32"
+    cy="32"
+    r="16.5"
+    fill="none"
+    stroke="#081119"
+    stroke-width="7.5"
+    stroke-linecap="round"
+    stroke-dasharray="82 21.7"
+    transform="rotate(37.5 32 32)"
+  />
+</svg>

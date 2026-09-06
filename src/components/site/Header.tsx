@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import type { SiteSettings } from '@/lib/site-data';
 import { safeHref } from '@/lib/safe-href';
+import { Mark } from '@/components/Mark';
 
 export function Header({
   menu: rawMenu,
@@ -38,7 +39,7 @@ export function Header({
     >
       <nav className="mx-auto flex max-w-[1200px] items-center justify-between gap-3 px-4 py-3 sm:gap-5 sm:px-[30px] sm:py-4">
         <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
-          <span className="from-aurora via-ice to-violet size-[26px] flex-none rounded-full bg-conic" />
+          <Mark id="nb-header" className="size-[28px] flex-none" />
           <span className="font-display truncate text-[15px] font-semibold tracking-[-0.01em] sm:text-[16px]">
             {brandName}
           </span>

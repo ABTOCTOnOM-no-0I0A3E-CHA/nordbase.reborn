@@ -8,6 +8,7 @@ import { Nav } from '@/components/admin/Nav';
 import { Icon } from '@/components/admin/icons';
 import { AdminShell } from '@/components/admin/Shell';
 import { ToastProvider } from '@/components/admin/Toast';
+import { Mark } from '@/components/Mark';
 
 /* Проверка здесь, а не в middleware: middleware крутится на edge и не ходит в БД,
    так что там можно проверить только наличие куки, но не её валидность. */
@@ -32,7 +33,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
         sidebar={
           <>
         <Link href="/admin" className="mb-6 flex items-center gap-2.5 px-3">
-          <span className="from-aurora via-ice to-violet size-6 flex-none rounded-full bg-conic" />
+          <Mark id="nb-side" className="size-7 flex-none" />
           <span className="font-display text-[15px] font-semibold">NORDBASE</span>
         </Link>
 

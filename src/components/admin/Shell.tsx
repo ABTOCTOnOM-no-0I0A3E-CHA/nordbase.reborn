@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { Mark } from '@/components/Mark';
 
 /* Каркас панели. На широком экране — колонка слева, как было. На телефоне
    тринадцать разделов над содержимым означали бы, что до самой страницы надо
@@ -63,7 +64,7 @@ export function AdminShell({
         </button>
 
         <span className="flex items-center gap-2">
-          <span className="from-aurora via-ice to-violet size-5 flex-none rounded-full bg-conic" />
+          <Mark id="nb-bar" className="size-[22px] flex-none" />
           <span className="font-display text-[14px] font-semibold">NORDBASE</span>
         </span>
 

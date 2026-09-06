@@ -393,13 +393,15 @@ export function Occupancy({
                 className="mt-1 grid items-center gap-px"
                 style={{ gridTemplateColumns: columns }}
               >
+                {/* Ноль мест — владелец следит только за домиками: тогда людей
+                    по-прежнему показываем, но ни с чем не сравниваем. */}
                 <span className="text-ink-3 pr-3 text-[12px]">
-                  Гостей · вездеход до {vehicleCapacity}
+                  {vehicleCapacity > 0 ? `Гостей · увозим до ${vehicleCapacity}` : 'Гостей'}
                 </span>
                 {Array.from({ length: total }, (_, i) => {
                   const day = i + 1;
                   const guests = guestsPerDay.get(day) ?? 0;
-                  const over = guests > vehicleCapacity;
+                  const over = vehicleCapacity > 0 && guests > vehicleCapacity;
                   return (
                     <span
                       key={day}

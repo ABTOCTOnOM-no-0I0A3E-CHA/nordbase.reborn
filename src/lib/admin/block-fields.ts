@@ -157,6 +157,23 @@ export const BLOCK_FIELDS: Record<BlockType, FieldDef[]> = {
   faq: heading,
   reviews: heading,
   requestForm: heading,
+
+  availability: [
+    ...heading,
+    { kind: 'checkbox', name: 'visible', label: 'Показывать календарь на сайте' },
+    {
+      kind: 'select',
+      name: 'months',
+      label: 'Сколько месяцев показывать',
+      options: [
+        { value: '1', label: '1' },
+        { value: '2', label: '2' },
+        { value: '3', label: '3' },
+        { value: '4', label: '4' },
+        { value: '6', label: '6' },
+      ],
+    },
+  ],
 };
 
 /* Подсказка под названием блока в списке — чтобы владелец понимал, откуда
@@ -169,6 +186,7 @@ export const BLOCK_HINTS: Partial<Record<BlockType, string>> = {
   faq: 'Содержимое берётся из раздела «Вопросы»',
   reviews: 'Содержимое берётся из раздела «Отзывы»',
   requestForm: 'Форма заявки — поля фиксированы',
+  availability: 'Даты берутся из раздела «Занятость». Снимите галочку — блок пропадёт с сайта, настройки останутся.',
 };
 
 /* Значок и объяснение для каждого блока. Список «Добавить блок» без них
@@ -188,6 +206,7 @@ export const BLOCK_ICONS: Record<BlockType, IconName> = {
   faq: 'faq',
   reviews: 'review',
   requestForm: 'form',
+  availability: 'calendar',
   cta: 'plus',
   map: 'map',
 };
@@ -206,6 +225,8 @@ export const BLOCK_ABOUT: Record<BlockType, string> = {
   faq: 'Вопросы и ответы, раскрываются по клику. Берутся из раздела «Вопросы».',
   reviews: 'Отзывы гостей и ссылка на Яндекс.Карты. Берутся из раздела «Отзывы».',
   requestForm: 'Форма заявки. Поля фиксированы, гость заполняет и отправляет.',
+  availability:
+    'Календарь свободных дат. Гость видит, какие числа заняты, и не пишет «а свободно ли 12-е».',
   cta: 'Полоса с призывом и кнопкой. Когда формы на странице много, а подтолкнуть надо.',
   map: 'Карта Яндекса с карточкой базы. Загружается по клику гостя.',
 };

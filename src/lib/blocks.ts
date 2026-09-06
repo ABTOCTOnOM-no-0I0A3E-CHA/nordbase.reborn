@@ -149,6 +149,21 @@ export const requestFormBlock = z.object({
   ...heading,
 });
 
+/* Календарь занятости для гостя. Даты берутся из тех же броней, что и в
+   панели, — отдельного источника нет и быть не должно.
+
+   Выключатель нужен по-настоящему: в мёртвый сезон или пока владелец не
+   привык отмечать брони, пустой календарь «всё свободно» врёт гостю сильнее,
+   чем его отсутствие. Снятая галочка прячет блок со страницы, но сохраняет
+   заголовки — их не приходится набирать заново. */
+export const availabilityBlock = z.object({
+  type: z.literal('availability'),
+  ...heading,
+  visible: z.boolean().catch(true).default(true),
+  /* Сколько месяцев вперёд показывать. */
+  months: z.coerce.number().int().min(1).max(6).catch(2).default(2),
+});
+
 export const blockSchema = z.discriminatedUnion('type', [
   heroBlock,
   textBlock,
@@ -165,6 +180,7 @@ export const blockSchema = z.discriminatedUnion('type', [
   faqBlock,
   reviewsBlock,
   requestFormBlock,
+  availabilityBlock,
 ]);
 
 export const blocksSchema = z.array(blockSchema);
@@ -187,6 +203,7 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
   faq: 'Вопросы и ответы',
   reviews: 'Отзывы',
   requestForm: 'Форма заявки',
+  availability: 'Календарь занятости',
   cta: 'Призыв к действию',
   map: 'Карта',
 };
@@ -205,6 +222,7 @@ export const BLOCK_ORDER: BlockType[] = [
   'faq',
   'reviews',
   'requestForm',
+  'availability',
   'cta',
   'map',
 ];

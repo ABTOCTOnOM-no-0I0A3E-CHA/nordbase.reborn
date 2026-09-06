@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { and, eq, gt, lt, ne } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '@/db';
-import { bookings, requests } from '@/db/schema';
+import { bookings, requests, settings } from '@/db/schema';
 import { requireUser } from '@/lib/auth/guard';
 
 export async function setRequestStatus(formData: FormData): Promise<void> {
@@ -147,4 +147,19 @@ export async function deleteBooking(formData: FormData): Promise<void> {
   await db.delete(bookings).where(eq(bookings.id, z.uuid().parse(formData.get('id'))));
   revalidatePath('/admin/calendar');
   revalidatePath('/', 'layout');
+}
+
+/* Вместимость заезда живёт отдельной строкой настроек — см. lib/occupancy-settings. */
+export async function saveSeats(formData: FormData): Promise<void> {
+  await requireUser();
+
+  const seats = z.coerce.number().int().min(0).max(200).parse(formData.get('seats'));
+  const value = { seats };
+
+  await db
+    .insert(settings)
+    .values({ key: 'occupancy', value, updatedAt: new Date() })
+    .onConflictDoUpdate({ target: settings.key, set: { value, updatedAt: new Date() } });
+
+  revalidatePath('/admin/calendar');
 }

@@ -1,11 +1,12 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { EmptyState, Panel } from './ui';
+import { EmptyState, Panel, Submit } from './ui';
+import { NumberField } from '@/components/form/NumberField';
 import { ActionForm } from './ActionForm';
 import { Occupancy, type Booking, type House } from './Occupancy';
 import { BookingForm } from './BookingForm';
-import { deleteBooking } from '@/lib/admin/request-actions';
+import { deleteBooking, saveSeats } from '@/lib/admin/request-actions';
 
 /* Шахматка, форма и список — один экран с общим выбором: клик по полосе в
    календаре открывает эту бронь в форме, а не заставляет искать её глазами
@@ -53,7 +54,7 @@ export function BookingBoard({
 
   return (
     <div>
-      <div className="mb-6">
+      <div className="mb-4">
         <Occupancy
           today={today}
           houses={houses}
@@ -62,6 +63,27 @@ export function BookingBoard({
           selectedId={selectedId}
           onSelect={pick}
         />
+      </div>
+
+      {/* Вместимость правится здесь же, под таблицей: цифра из строки «Гостей»
+          и поле, которое её задаёт, должны быть на одном экране. */}
+      <div className="border-line bg-bg-3 mb-6 flex flex-wrap items-end gap-4 rounded-[14px] border px-4 py-3.5">
+        <ActionForm action={saveSeats} success="Вместимость сохранена" className="flex items-end gap-3">
+          <span>
+            <span className="text-ink mb-1.5 block text-[13px] font-semibold">
+              Сколько человек увозите за день
+            </span>
+            <span className="block w-[160px]">
+              <NumberField name="seats" defaultValue={vehicleCapacity} min={0} max={200} suffix="чел." />
+            </span>
+          </span>
+          <Submit variant="ghost">Сохранить</Submit>
+        </ActionForm>
+
+        <p className="text-ink-3 max-w-[46ch] text-[12.5px] leading-[1.45]">
+          Вездеход берёт восемь человек за поездку. Делаете два рейса — поставьте шестнадцать.
+          Ноль — не считать людей, следить только за домиками.
+        </p>
       </div>
 
       {/* Правка и заведение новой брони — одна форма, поэтому режим видно по

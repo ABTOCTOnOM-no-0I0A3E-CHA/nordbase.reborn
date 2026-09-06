@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Block } from '@/lib/blocks';
 import { loadRequestFormOptions, type BlockData } from '@/lib/site-data';
 import { loadBusyDates } from '@/lib/occupancy';
+import { AvailabilityCalendar } from '@/components/site/AvailabilityCalendar';
 import { todayIso } from '@/lib/dates';
 import { loadSettings } from '@/lib/site-data';
 import { Aurora } from '@/components/site/Aurora';
@@ -485,6 +486,33 @@ async function RequestFormSection({
   );
 }
 
+/* Календарю нужны занятые даты и число домиков: день считается закрытым,
+   только когда заняты все — если хоть один свободен, гостю есть куда заехать. */
+async function AvailabilitySection({
+  block,
+  data,
+}: {
+  block: Extract<Block, { type: 'availability' }>;
+  data: BlockData;
+}) {
+  const [{ houses }, busyByHouse] = await Promise.all([
+    loadRequestFormOptions(data),
+    loadBusyDates(),
+  ]);
+
+  return (
+    <>
+      <SectionHead eyebrow={block.eyebrow} title={block.title} subtitle={block.subtitle} />
+      <AvailabilityCalendar
+        busyByHouse={busyByHouse}
+        houseCount={houses.length}
+        today={todayIso()}
+        months={block.months}
+      />
+    </>
+  );
+}
+
 /* ------------------------------------------------------------- диспетчер */
 
 /* Hero сам себе секция — на всю ширину, без отступов и подложки. */
@@ -532,6 +560,8 @@ function Body({ block, data }: { block: Block; data: BlockData }) {
       return <Reviews block={block} data={data} />;
     case 'requestForm':
       return <RequestFormSection block={block} data={data} />;
+    case 'availability':
+      return <AvailabilitySection block={block} data={data} />;
   }
 }
 
@@ -540,6 +570,9 @@ export function BlockList({ blocks, data }: { blocks: Block[]; data: BlockData }
   return (
     <>
       {blocks.map((block, index) => {
+        /* Снятая галочка в блоке календаря убирает его целиком, вместе с
+           полосой секции: иначе на странице остаётся пустой отступ. */
+        if (block.type === 'availability' && !block.visible) return null;
         if (FULL_BLEED.has(block.type)) {
           return <Body key={index} block={block} data={data} />;
         }

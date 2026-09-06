@@ -680,6 +680,16 @@ await db.insert(s.pages).values([
       },
       { type: 'gallery', ...heading('Что вокруг', 'Полуостров в фотографиях'), mediaIds: galleryIds },
       {
+        type: 'availability',
+        ...heading(
+          'Свободные даты',
+          'Когда можно приехать',
+          'Даты берём из своего календаря броней. Занятые числа видно сразу.',
+        ),
+        visible: true,
+        months: 3,
+      },
+      {
         type: 'requestForm',
         ...heading(
           'Заявка',

@@ -4,6 +4,7 @@ import { bookings, houses } from '@/db/schema';
 import { AdminHeading } from '@/components/admin/ui';
 import { BookingBoard } from '@/components/admin/BookingBoard';
 import { todayIso } from '@/lib/dates';
+import { loadOccupancySettings } from '@/lib/occupancy-settings';
 
 export const metadata = { title: 'Занятость' };
 
@@ -12,9 +13,10 @@ export default async function CalendarPage() {
   /* Показываем и прошлый месяц: календарь листается назад. */
   const from = `${today.slice(0, 8)}01`;
 
-  const [houseRows, bookingRows] = await Promise.all([
+  const [houseRows, bookingRows, occupancy] = await Promise.all([
     db.select().from(houses).orderBy(asc(houses.sort)),
     db.select().from(bookings).where(gte(bookings.dateTo, from)).orderBy(asc(bookings.dateFrom)),
+    loadOccupancySettings(),
   ]);
 
   return (
@@ -26,7 +28,7 @@ export default async function CalendarPage() {
 
       <BookingBoard
         today={today}
-        vehicleCapacity={8}
+        vehicleCapacity={occupancy.seats}
         houses={houseRows.map((house) => ({ id: house.id, title: house.title }))}
         bookings={bookingRows.map((booking) => ({
           id: booking.id,

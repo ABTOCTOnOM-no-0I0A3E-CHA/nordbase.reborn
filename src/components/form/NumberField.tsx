@@ -68,7 +68,8 @@ export function NumberField({
         aria-label="Меньше"
         disabled={atMin}
         onClick={() => nudge(-1)}
-        className="text-ink-3 hover:bg-bg-4 hover:text-ink w-10 flex-none cursor-pointer text-[18px] leading-none disabled:cursor-not-allowed disabled:opacity-30"
+        /* Не меньше 44px: палец промахивается по всему, что мельче. */
+        className="text-ink-3 hover:bg-bg-4 hover:text-ink flex w-11 flex-none cursor-pointer items-center justify-center text-[18px] leading-none disabled:cursor-not-allowed disabled:opacity-30"
       >
         −
       </button>
@@ -102,7 +103,8 @@ export function NumberField({
         aria-label="Больше"
         disabled={atMax}
         onClick={() => nudge(1)}
-        className="text-ink-3 hover:bg-bg-4 hover:text-ink w-10 flex-none cursor-pointer text-[18px] leading-none disabled:cursor-not-allowed disabled:opacity-30"
+        /* Не меньше 44px: палец промахивается по всему, что мельче. */
+        className="text-ink-3 hover:bg-bg-4 hover:text-ink flex w-11 flex-none cursor-pointer items-center justify-center text-[18px] leading-none disabled:cursor-not-allowed disabled:opacity-30"
       >
         +
       </button>

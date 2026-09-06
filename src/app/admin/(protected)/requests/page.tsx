@@ -110,7 +110,23 @@ export default async function RequestsPage() {
                     <b className={`font-semibold ${isNew ? 'text-[18px]' : 'text-[16px]'}`}>
                       {request.name}
                     </b>
-                    <a href={`tel:${request.phone}`} className="text-ice text-[14px]">
+                    {/* На телефоне звонок — главное действие по заявке, поэтому
+                        номер здесь кнопка под палец, а не строчка текста. */}
+                    <a
+                      href={`tel:${request.phone}`}
+                      className="border-ice/40 text-ice hover:bg-ice/10 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[14px] font-semibold"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="size-[15px]"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={1.7}
+                        strokeLinecap="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M5 4h3l2 5-2 1a11 11 0 0 0 5 5l1-2 5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z" />
+                      </svg>
                       {request.phone}
                     </a>
                     <span
@@ -166,10 +182,10 @@ export default async function RequestsPage() {
                     <ActionForm
                       action={setRequestStatus}
                       success="Статус обновлён"
-                      className="flex items-center gap-2"
+                      className="flex w-full items-center gap-2 sm:w-auto"
                     >
                       <input type="hidden" name="id" value={request.id} />
-                      <span className="w-48">
+                      <span className="w-full sm:w-48">
                         <Select
                           name="status"
                           defaultValue={request.status}

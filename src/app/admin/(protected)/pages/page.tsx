@@ -32,7 +32,10 @@ export default async function PagesList() {
           <Link
             key={row.id}
             href={`/admin/pages/${row.id}`}
-            className="bg-bg-3 border-line hover:border-line-2 flex flex-wrap items-center gap-3 rounded-[14px] border px-4 py-3 transition"
+            /* min-w-0: элемент сетки по умолчанию не сжимается меньше своего
+               содержимого, а truncate внутри делает строку неразрывной — без
+               этого длинный заголовок распирает карточку за край экрана. */
+            className="bg-bg-3 border-line hover:border-line-2 flex min-w-0 flex-wrap items-center gap-3 rounded-[14px] border px-4 py-3 transition"
           >
             <span className="bg-bg-2 text-ink-3 flex size-9 flex-none items-center justify-center rounded-[10px]">
               <Icon name="pages" className="size-[18px]" />

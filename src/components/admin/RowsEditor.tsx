@@ -150,7 +150,7 @@ export function RowsEditor({
         return (
           <div
             key={row.id}
-            className={`bg-bg-3 overflow-hidden rounded-[14px] border transition ${
+            className={`bg-bg-3 min-w-0 overflow-hidden rounded-[14px] border transition ${
               open ? 'border-aurora/40' : 'border-line'
             }`}
           >

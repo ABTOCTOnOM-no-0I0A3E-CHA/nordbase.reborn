@@ -55,7 +55,13 @@ export function Popover({
       const rect = anchor.getBoundingClientRect();
       const below = window.innerHeight - rect.bottom;
       const flipped = below < maxHeight + 16 && rect.top > below;
-      const layerWidth = width ?? (matchWidth ? rect.width : 290);
+      /* На телефоне поле бывает узким (половина строки в сетке), а список в
+         такой ширине нечитаем. Поэтому не уже 260px — и никогда шире экрана. */
+      const room = window.innerWidth - 16;
+      const layerWidth = Math.min(
+        Math.max(width ?? (matchWidth ? rect.width : 290), Math.min(260, room)),
+        room,
+      );
 
       /* Не даём слою вылезти за правый край окна. */
       const left = Math.min(Math.max(8, rect.left), window.innerWidth - layerWidth - 8);
@@ -81,7 +87,7 @@ export function Popover({
   useEffect(() => {
     if (!open) return;
 
-    const onPointerDown = (event: MouseEvent) => {
+    const onPointerDown = (event: Event) => {
       const target = event.target as Node;
       if (layerRef.current?.contains(target)) return;
       if (anchorRef.current?.contains(target)) return;
@@ -92,9 +98,13 @@ export function Popover({
     };
 
     document.addEventListener('mousedown', onPointerDown);
+    /* На тач-экране mousedown приходит только после отпускания пальца, из-за
+       чего список закрывается с заметной задержкой. */
+    document.addEventListener('touchstart', onPointerDown, { passive: true });
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('touchstart', onPointerDown);
       document.removeEventListener('keydown', onKey);
     };
   }, [open, onClose, anchorRef]);

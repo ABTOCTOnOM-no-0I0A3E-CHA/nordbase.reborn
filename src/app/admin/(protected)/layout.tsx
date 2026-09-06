@@ -6,6 +6,7 @@ import { requests } from '@/db/schema';
 import { destroySession, getSessionUser } from '@/lib/auth/session';
 import { Nav } from '@/components/admin/Nav';
 import { Icon } from '@/components/admin/icons';
+import { AdminShell } from '@/components/admin/Shell';
 import { ToastProvider } from '@/components/admin/Toast';
 
 /* Проверка здесь, а не в middleware: middleware крутится на edge и не ходит в БД,
@@ -26,8 +27,10 @@ export default async function ProtectedLayout({ children }: { children: React.Re
 
   return (
     <ToastProvider>
-      <div className="lg:grid lg:min-h-dvh lg:grid-cols-[254px_1fr]">
-      <aside className="border-line bg-bg-0 flex flex-col border-b px-3 py-5 lg:sticky lg:top-0 lg:h-dvh lg:overflow-y-auto lg:border-r lg:border-b-0">
+      <AdminShell
+        newRequests={counts?.fresh ?? 0}
+        sidebar={
+          <>
         <Link href="/admin" className="mb-6 flex items-center gap-2.5 px-3">
           <span className="from-aurora via-ice to-violet size-6 flex-none rounded-full bg-conic" />
           <span className="font-display text-[15px] font-semibold">NORDBASE</span>
@@ -61,10 +64,11 @@ export default async function ProtectedLayout({ children }: { children: React.Re
             </form>
           </div>
         </div>
-      </aside>
-
-      <main className="mx-auto w-full max-w-[1080px] px-5 py-8 sm:px-8 sm:py-10">{children}</main>
-      </div>
+          </>
+        }
+      >
+        {children}
+      </AdminShell>
     </ToastProvider>
   );
 }

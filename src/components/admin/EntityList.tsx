@@ -34,7 +34,9 @@ export function EntityList({
       {rows.map((row, index) => (
         <div
           key={row.id}
-          className="bg-bg-3 border-line hover:border-line-2 flex flex-wrap items-center gap-3 rounded-[14px] border px-4 py-3 transition"
+          /* min-w-0 — иначе truncate внутри распирает карточку за край экрана:
+             элемент сетки не сжимается меньше своего содержимого. */
+          className="bg-bg-3 border-line hover:border-line-2 flex min-w-0 flex-wrap items-center gap-3 rounded-[14px] border px-4 py-3 transition"
         >
           <span className="bg-bg-2 text-ink-3 flex size-9 flex-none items-center justify-center rounded-[10px]">
             <Icon name={icon} className="size-[18px]" />

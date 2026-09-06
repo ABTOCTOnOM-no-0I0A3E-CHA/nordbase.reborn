@@ -129,6 +129,13 @@ export const BLOCK_FIELDS: Record<BlockType, FieldDef[]> = {
 
   map: [
     ...heading,
+    {
+      kind: 'text',
+      name: 'orgId',
+      label: 'ID организации в Яндексе',
+      placeholder: '52469441447 — тогда покажется карточка базы',
+      wide: true,
+    },
     { kind: 'number', name: 'lat', label: 'Широта' },
     { kind: 'number', name: 'lng', label: 'Долгота' },
     { kind: 'number', name: 'zoom', label: 'Масштаб 1–19' },

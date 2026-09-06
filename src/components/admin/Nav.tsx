@@ -29,6 +29,7 @@ const groups: { title: string; items: { href: string; label: string }[] }[] = [
       { href: '/admin/faq', label: 'Вопросы' },
       { href: '/admin/reviews', label: 'Отзывы' },
       { href: '/admin/settings', label: 'Настройки' },
+      { href: '/admin/integrations', label: 'Интеграции' },
     ],
   },
 ];

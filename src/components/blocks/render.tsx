@@ -484,7 +484,7 @@ function Body({ block, data }: { block: Block; data: BlockData }) {
       return (
         <>
           <SectionHead eyebrow={block.eyebrow} title={block.title} subtitle={block.subtitle} />
-          <MapWidget lat={block.lat} lng={block.lng} zoom={block.zoom} />
+          <MapWidget lat={block.lat} lng={block.lng} zoom={block.zoom} orgId={block.orgId} />
         </>
       );
     case 'houses':

@@ -1,17 +1,17 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useFormAction } from '@/lib/use-form-action';
 import { uploadMedia, type UploadState } from '@/lib/admin/media-actions';
 import { Field, Input, Submit, inputClass } from './ui';
 
 const initial: UploadState = { uploaded: 0, errors: [] };
 
 export function MediaUpload() {
-  const [state, formAction] = useActionState(uploadMedia, initial);
+  const { state, pending, onSubmit } = useFormAction(uploadMedia, initial);
 
   return (
     <form
-      action={formAction}
+      onSubmit={onSubmit}
       className="border-line-2 mb-7 grid gap-4 rounded-[14px] border border-dashed p-5 md:grid-cols-[1fr_1fr_auto] md:items-end"
     >
       <Field
@@ -33,7 +33,7 @@ export function MediaUpload() {
       </Field>
 
       <div className="pb-1">
-        <Submit>Загрузить</Submit>
+        <Submit pending={pending}>Загрузить</Submit>
       </div>
 
       {state.uploaded > 0 ? (

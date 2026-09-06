@@ -95,6 +95,9 @@ export const ctaBlock = z.object({
 export const mapBlock = z.object({
   type: z.literal('map'),
   ...heading,
+  /* Если указан id организации в Яндексе, виджет показывает карточку базы
+     с фото и отзывами. Пусто — обычная метка по координатам. */
+  orgId: optionalText,
   lat: z.number().catch(69.785748).default(69.785748),
   lng: z.number().catch(32.102471).default(32.102471),
   zoom: z.number().int().min(1).max(19).catch(10).default(10),

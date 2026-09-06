@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useActionState, useState } from 'react';
+import { useState } from 'react';
+import { useFormAction } from '@/lib/use-form-action';
 import { submitRequest, type RequestState } from '@/lib/request-actions';
 import type { HouseRecord, TourRecord } from '@/lib/site-data';
 
@@ -42,7 +43,7 @@ export function RequestForm({
      может стоять любая зона, и минимальная дата уехала бы на сутки. */
   today: string;
 }) {
-  const [state, formAction, pending] = useActionState(submitRequest, initial);
+  const { state, pending, onSubmit } = useFormAction(submitRequest, initial);
   const [guests, setGuests] = useState(2);
   const [houseId, setHouseId] = useState('');
   const [dateFrom, setDateFrom] = useState('');
@@ -66,7 +67,7 @@ export function RequestForm({
   }
 
   return (
-    <form action={formAction} className="grid gap-4 md:grid-cols-2">
+    <form onSubmit={onSubmit} className="grid gap-4 md:grid-cols-2">
       <div className="md:col-span-2">
         <label className={label} htmlFor="direction">
           Куда едете

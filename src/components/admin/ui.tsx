@@ -37,16 +37,21 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return <select {...props} className={`${inputClass} ${props.className ?? ''}`} />;
 }
 
-/* Состояние берём из useFormStatus — оно про ближайшую форму, поэтому кнопка
-   сама знает, что отправка идёт, и её не нужно прокидывать сверху. */
+/* По умолчанию состояние берём из useFormStatus — кнопка сама знает, что
+   отправка идёт. Но useFormStatus работает только с `<form action={fn}>`;
+   формы, которые отправляются вручную (см. useFormAction), передают pending
+   сами — иначе кнопка никогда не покажет, что запрос пошёл. */
 export function Submit({
   children = 'Сохранить',
   variant = 'solid',
+  pending: pendingProp,
 }: {
   children?: ReactNode;
   variant?: 'solid' | 'ghost' | 'danger';
+  pending?: boolean;
 }) {
-  const { pending } = useFormStatus();
+  const status = useFormStatus();
+  const pending = pendingProp ?? status.pending;
   const look = {
     solid: 'bg-aurora text-aurora-ink hover:bg-aurora-hi',
     ghost: 'border border-line-2 text-ink-2 hover:text-ink',

@@ -110,6 +110,52 @@ const galleryIds = (
   ])
 ).filter((id): id is string => id !== null);
 
+/* Всё остальное со старого сайта — в медиатеку. Роли (обложки, галереи)
+   расставлены выше вручную; здесь просто складываем оставшиеся снимки, чтобы
+   владельцу было из чего выбирать в админке и не пришлось искать их по папкам. */
+
+async function importRest(): Promise<number> {
+  const { readdir } = await import('node:fs/promises');
+  const extensions = ['.jpg', '.jpeg', '.png', '.webp'];
+
+  async function walk(dir: string): Promise<string[]> {
+    const entries = await readdir(join(LEGACY, dir), { withFileTypes: true });
+    const found: string[] = [];
+    for (const entry of entries) {
+      const relative = dir ? `${dir}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) {
+        found.push(...(await walk(relative)));
+      } else if (extensions.some((ext) => entry.name.toLowerCase().endsWith(ext))) {
+        found.push(relative);
+      }
+    }
+    return found;
+  }
+
+  let added = 0;
+  try {
+    for (const relative of (await walk('')).sort()) {
+      if (imported.has(relative)) continue;
+      /* Описание собираем из пути: «rybachiy/attractions/capes/myis.webp» →
+         «rybachiy attractions capes myis». Черновое, но осмысленное — владелец
+         поправит в медиатеке, а пустое поле подсвечивается на панели. */
+      const alt = relative
+        .replace(/\.[a-z0-9]+$/i, '')
+        .split('/')
+        .join(' ')
+        .replace(/[-_]+/g, ' ')
+        .trim();
+      if (await photo(relative, alt)) added += 1;
+    }
+  } catch {
+    console.warn('  не удалось обойти папку со старыми фото — пропускаю');
+  }
+  return added;
+}
+
+const restCount = await importRest();
+console.log(`Дополнительно перенесено в медиатеку: ${restCount}`);
+
 /* ---------------------------------------------------------------- домики */
 
 console.log('Создаю домики, туры и сезоны…');
@@ -487,8 +533,8 @@ await db.insert(s.settings).values({
     seoDescription:
       'Своя база на полуострове Рыбачий и авторские туры по Териберке. Заброска на вездеходе входит в стоимость тура, пропуск в погранзону оформляем сами.',
     ctaLabel: 'Оставить заявку',
-    /* Ссылку на карточку базы в Яндекс.Картах владелец добавит в настройках. */
-    reviewsUrl: '',
+    /* Карточка базы в Яндекс.Картах — взята со старого сайта. */
+    reviewsUrl: 'https://yandex.ru/maps/org/52469441447/reviews/',
     reviewsLabel: 'Смотреть отзывы на Яндекс.Картах',
     directions: ['Полуостров Рыбачий', 'Териберка', 'Ещё не решили'],
     phone: '+7 911 802-86-14',
@@ -786,7 +832,14 @@ await db.insert(s.pages).values([
         ...heading('Контакты', 'Напишите в удобный мессенджер', 'Telegram и WhatsApp: +7 911 802-86-14'),
         body: 'Отвечаем быстрее всего в мессенджерах. Если вопрос про даты — сразу напишите, сколько вас и на сколько дней.',
       },
-      { type: 'map', ...heading('', 'Как нас найти'), lat: 69.785748, lng: 32.102471, zoom: 10 },
+      {
+        type: 'map',
+        ...heading('', 'Как нас найти'),
+        orgId: '52469441447',
+        lat: 69.785748,
+        lng: 32.102471,
+        zoom: 10,
+      },
       { type: 'requestForm', ...heading('Заявка', 'Или оставьте заявку') },
     ],
   },
@@ -803,7 +856,7 @@ await db.insert(s.pages).values([
         ...heading(
           'Отзывы',
           'Что говорят гости',
-          'Пока отзывы собираются на Яндекс.Картах. Добавьте ссылку в настройках сайта — здесь появится кнопка, а сами отзывы можно завести в разделе «Отзывы».',
+          'Пока отзывы собираются на Яндекс.Картах. Свои отзывы можно добавить в админке, в разделе «Отзывы» — они появятся здесь же.',
         ),
         body: '',
       },

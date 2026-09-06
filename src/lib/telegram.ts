@@ -1,19 +1,19 @@
 import 'server-only';
 import { ProxyAgent, request, type Dispatcher } from 'undici';
-import { env } from '@/env';
+import { loadTelegramConfig, type TelegramConfig } from './telegram-config';
 
 /* В России api.telegram.org недоступен напрямую, поэтому есть два пути,
    и они не исключают друг друга:
 
-   TELEGRAM_API_BASE  — свой обратный прокси на зарубежном VPS
-                        (обычный nginx, проксирующий на api.telegram.org).
-                        Самый надёжный вариант: одна точка отказа, никаких
-                        секретов у посредника кроме токена в пути.
-   TELEGRAM_PROXY_URL — HTTP(S)-прокси с поддержкой CONNECT.
+   «Свой адрес API» — обратный прокси на зарубежном VPS (обычный nginx,
+                      проксирующий на api.telegram.org). Самый надёжный
+                      вариант: одна точка отказа и никаких посредников
+                      в момент отправки.
+   «Прокси»         — HTTP(S)-прокси с поддержкой CONNECT.
 
    SOCKS5 напрямую не поддерживается: undici умеет только HTTP-прокси.
-   Если под рукой только SOCKS — поднимите рядом http-мост или используйте
-   TELEGRAM_API_BASE. */
+   Если под рукой только SOCKS — поднимите рядом http-мост или укажите
+   свой адрес API. И то и другое правится в админке, в «Интеграциях». */
 
 /* Экранирование под parse_mode=HTML: имя и комментарий приходят от гостя,
    без этого «<» в тексте уронит отправку сообщения. */
@@ -38,37 +38,34 @@ export function formatRequest(title: string, fields: TelegramField[]): string {
    новое соединение и держал бы сокеты. */
 let cachedProxy: { url: string; agent: ProxyAgent } | null = null;
 
-function dispatcher(): Dispatcher | undefined {
-  const url = env.TELEGRAM_PROXY_URL;
-  if (!url) return undefined;
-  if (cachedProxy?.url !== url) {
-    cachedProxy = { url, agent: new ProxyAgent(url) };
+function dispatcher(proxyUrl: string): Dispatcher | undefined {
+  if (!proxyUrl) return undefined;
+  if (cachedProxy?.url !== proxyUrl) {
+    cachedProxy = { url: proxyUrl, agent: new ProxyAgent(proxyUrl) };
   }
   return cachedProxy.agent;
 }
 
 export type TelegramResult = { ok: boolean; reason?: string };
 
-/* Уведомление не должно ронять отправку заявки: заявка уже в БД и не потеряется,
-   поэтому ошибку возвращаем, а не бросаем наверх. */
-export async function sendTelegram(text: string): Promise<TelegramResult> {
-  if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) {
-    return { ok: false, reason: 'не заданы TELEGRAM_BOT_TOKEN или TELEGRAM_CHAT_ID' };
+async function send(config: TelegramConfig, text: string): Promise<TelegramResult> {
+  if (!config.botToken || !config.chatId) {
+    return { ok: false, reason: 'не заданы токен бота или chat id' };
   }
 
-  const base = (env.TELEGRAM_API_BASE ?? 'https://api.telegram.org').replace(/\/$/, '');
+  const base = (config.apiBase || 'https://api.telegram.org').replace(/\/$/, '');
 
   try {
-    const response = await request(`${base}/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    const response = await request(`${base}/bot${config.botToken}/sendMessage`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        chat_id: env.TELEGRAM_CHAT_ID,
+        chat_id: config.chatId,
         text,
         parse_mode: 'HTML',
         disable_web_page_preview: true,
       }),
-      dispatcher: dispatcher(),
+      dispatcher: dispatcher(config.proxyUrl),
       headersTimeout: 10_000,
       bodyTimeout: 10_000,
     });
@@ -76,7 +73,15 @@ export async function sendTelegram(text: string): Promise<TelegramResult> {
     if (response.statusCode >= 400) {
       const details = await response.body.text();
       console.error('[telegram] sendMessage вернул', response.statusCode, details);
-      return { ok: false, reason: `Telegram ответил ${response.statusCode}` };
+      /* Описание от Telegram полезно владельцу: «chat not found»,
+         «Unauthorized» и подобное сразу говорят, что именно чинить. */
+      const description = safeDescription(details);
+      return {
+        ok: false,
+        reason: description
+          ? `Telegram: ${description}`
+          : `Telegram ответил ${response.statusCode}`,
+      };
     }
 
     /* Тело обязательно вычитываем, иначе соединение не вернётся в пул. */
@@ -84,6 +89,40 @@ export async function sendTelegram(text: string): Promise<TelegramResult> {
     return { ok: true };
   } catch (cause) {
     console.error('[telegram] не удалось отправить уведомление:', cause);
-    return { ok: false, reason: 'не удалось связаться с Telegram' };
+    return {
+      ok: false,
+      reason: config.proxyUrl
+        ? 'не удалось связаться с Telegram через прокси'
+        : 'не удалось связаться с Telegram — похоже, нужен прокси или свой адрес API',
+    };
   }
+}
+
+function safeDescription(body: string): string {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      'description' in parsed &&
+      typeof (parsed as { description: unknown }).description === 'string'
+    ) {
+      return (parsed as { description: string }).description;
+    }
+  } catch {
+    /* Telegram не всегда отвечает JSON — тогда просто нечего показать. */
+  }
+  return '';
+}
+
+/* Уведомление не должно ронять отправку заявки: заявка уже в БД и не потеряется,
+   поэтому ошибку возвращаем, а не бросаем наверх. */
+export async function sendTelegram(text: string): Promise<TelegramResult> {
+  return send(await loadTelegramConfig(), text);
+}
+
+/* Отправка заданной конфигурацией — для кнопки «Проверить связь»: владелец
+   должен увидеть результат до того, как сохранит настройки. */
+export function sendTelegramWith(config: TelegramConfig, text: string): Promise<TelegramResult> {
+  return send(config, text);
 }

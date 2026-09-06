@@ -1,16 +1,16 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useFormAction } from '@/lib/use-form-action';
 import { saveBooking, type BookingState } from '@/lib/admin/request-actions';
 import { Field, Input, Select, Submit } from './ui';
 
 const initial: BookingState = {};
 
 export function BookingForm({ houses }: { houses: { id: string; title: string }[] }) {
-  const [state, formAction] = useActionState(saveBooking, initial);
+  const { state, pending, onSubmit } = useFormAction(saveBooking, initial);
 
   return (
-    <form action={formAction} className="grid gap-4 sm:grid-cols-2">
+    <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
       <input type="hidden" name="id" value="" />
       <input type="hidden" name="requestId" value="" />
 
@@ -52,7 +52,7 @@ export function BookingForm({ houses }: { houses: { id: string; title: string }[
       {state.ok ? <p className="text-aurora text-[13.5px] sm:col-span-2">Бронь сохранена</p> : null}
 
       <div className="sm:col-span-2">
-        <Submit>Добавить бронь</Submit>
+        <Submit pending={pending}>Добавить бронь</Submit>
       </div>
     </form>
   );

@@ -4,9 +4,28 @@ import { useState } from 'react';
 
 /* Виджет Яндекса грузится по клику: чужой скрипт не тянется на каждом заходе
    и не тормозит первую отрисовку. */
-export function MapWidget({ lat, lng, zoom }: { lat: number; lng: number; zoom: number }) {
+export function MapWidget({
+  lat,
+  lng,
+  zoom,
+  orgId,
+}: {
+  lat: number;
+  lng: number;
+  zoom: number;
+  orgId?: string;
+}) {
   const [shown, setShown] = useState(false);
-  const src = `https://yandex.ru/map-widget/v1/?ll=${lng}%2C${lat}&z=${zoom}&pt=${lng},${lat},pm2rdm`;
+
+  /* С id организации Яндекс рисует карточку базы — с фото, режимом работы
+     и отзывами. Без него остаётся просто метка по координатам. */
+  const src = orgId
+    ? `https://yandex.ru/map-widget/v1/?z=${zoom}&ol=biz&oid=${encodeURIComponent(orgId)}`
+    : `https://yandex.ru/map-widget/v1/?ll=${lng}%2C${lat}&z=${zoom}&pt=${lng},${lat},pm2rdm`;
+
+  const external = orgId
+    ? `https://yandex.ru/maps/org/${encodeURIComponent(orgId)}/`
+    : `https://yandex.ru/maps/?pt=${lng},${lat}&z=${zoom}&l=map`;
 
   return (
     <div className="border-line bg-bg-3 overflow-hidden rounded-[16px] border">
@@ -39,7 +58,7 @@ export function MapWidget({ lat, lng, zoom }: { lat: number; lng: number; zoom: 
         </span>
         <a
           className="text-ice"
-          href={`https://yandex.ru/maps/?pt=${lng},${lat}&z=${zoom}&l=map`}
+          href={external}
           target="_blank"
           rel="noopener noreferrer"
         >

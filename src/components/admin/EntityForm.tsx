@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useFormAction } from '@/lib/use-form-action';
 import type { ReactNode } from 'react';
 import type { FormState } from '@/lib/admin/content-actions';
 import { Submit } from './ui';
@@ -19,13 +19,13 @@ export function EntityForm({
   children: ReactNode;
   submitLabel: string;
 }) {
-  const [state, formAction] = useActionState(action, initial);
+  const { state, pending, onSubmit } = useFormAction(action, initial);
 
   return (
-    <form action={formAction} className="grid gap-4 sm:grid-cols-2">
+    <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
       {children}
       <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
-        <Submit>{submitLabel}</Submit>
+        <Submit pending={pending}>{submitLabel}</Submit>
         {state.error ? <span className="text-busy text-[13.5px]">{state.error}</span> : null}
       </div>
     </form>

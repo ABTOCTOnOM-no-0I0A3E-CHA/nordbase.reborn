@@ -1,17 +1,17 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useFormAction } from '@/lib/use-form-action';
 import { login, type LoginState } from './actions';
 
 const initial: LoginState = {};
 
 export default function LoginPage() {
-  const [state, formAction, pending] = useActionState(login, initial);
+  const { state, pending, onSubmit } = useFormAction(login, initial);
 
   return (
     <main className="flex min-h-dvh items-center justify-center px-6">
       <form
-        action={formAction}
+        onSubmit={onSubmit}
         className="bg-bg-3 border-line w-full max-w-sm rounded-[18px] border p-8"
       >
         <p className="font-display text-aurora mb-6 text-xs tracking-[0.18em] uppercase">Nordbase</p>

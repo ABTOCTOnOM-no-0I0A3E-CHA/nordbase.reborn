@@ -44,6 +44,14 @@ export default async function RequestsPage() {
       <AdminHeading
         title="Заявки"
         description="Приходят с сайта и дублируются в Telegram. Здесь — полная история."
+        action={
+          <a
+            href="/admin/requests/export"
+            className="border-line-2 text-ink-2 hover:text-ink rounded-full border px-4 py-2 text-[13.5px] font-semibold"
+          >
+            Выгрузить в таблицу
+          </a>
+        }
       />
 
       {rows.length === 0 ? (

@@ -3,7 +3,8 @@ import { desc } from 'drizzle-orm';
 import { db } from '@/db';
 import { media } from '@/db/schema';
 import { mediaUrl } from '@/lib/media-url';
-import { AdminHeading, ConfirmSubmit, Input, Submit } from '@/components/admin/ui';
+import { AdminHeading, Input, Submit } from '@/components/admin/ui';
+import { ActionForm } from '@/components/admin/ActionForm';
 import { MediaUpload } from '@/components/admin/MediaUpload';
 import { deleteMedia, updateAlt } from '@/lib/admin/media-actions';
 
@@ -42,17 +43,24 @@ export default async function MediaPage() {
                 <p className="text-ink-3 text-[11.5px]">
                   {item.width}×{item.height} · {Math.round(item.size / 1024)} КБ
                 </p>
-                <form action={updateAlt} className="flex gap-2">
+                <ActionForm action={updateAlt} success="Описание сохранено" className="flex gap-2">
                   <input type="hidden" name="id" value={item.id} />
                   <Input name="alt" defaultValue={item.alt} placeholder="Что на фото" />
                   <Submit variant="ghost">OK</Submit>
-                </form>
-                <form action={deleteMedia}>
+                </ActionForm>
+                <ActionForm
+                  action={deleteMedia}
+                  success="Фото удалено"
+                  confirm="Удалить фото? Оно пропадёт на всех страницах, где используется."
+                >
                   <input type="hidden" name="id" value={item.id} />
-                  <ConfirmSubmit message="Удалить фото? Оно пропадёт на всех страницах, где используется.">
+                  <button
+                    type="submit"
+                    className="border-busy/40 text-busy hover:bg-busy/10 hover:border-busy/70 cursor-pointer rounded-full border px-3.5 py-1.5 text-[12.5px] font-semibold transition"
+                  >
                     Удалить
-                  </ConfirmSubmit>
-                </form>
+                  </button>
+                </ActionForm>
               </div>
             </div>
           ))}

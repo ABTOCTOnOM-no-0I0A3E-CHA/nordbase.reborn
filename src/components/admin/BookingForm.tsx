@@ -1,13 +1,25 @@
 'use client';
 
+import { useState } from 'react';
 import { useFormAction } from '@/lib/use-form-action';
+import { useToast } from './Toast';
 import { saveBooking, type BookingState } from '@/lib/admin/request-actions';
 import { Field, Input, Select, Submit } from './ui';
+import { DateField } from '@/components/form/DateField';
 
 const initial: BookingState = {};
 
 export function BookingForm({ houses }: { houses: { id: string; title: string }[] }) {
-  const { state, pending, onSubmit } = useFormAction(saveBooking, initial);
+  /* Даты держим в состоянии: выезд не должен быть раньше заезда. */
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const toast = useToast();
+  const { state, pending, onSubmit } = useFormAction(saveBooking, initial, {
+    onSuccess: (next) => {
+      if (next.error) toast.error(next.error);
+      else toast.ok('Даты отмечены как занятые');
+    },
+  });
 
   return (
     <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
@@ -15,31 +27,31 @@ export function BookingForm({ houses }: { houses: { id: string; title: string }[
       <input type="hidden" name="requestId" value="" />
 
       <Field label="Домик">
-        <Select name="houseId" required defaultValue="">
-          <option value="" disabled>
-            Выберите домик
-          </option>
-          {houses.map((house) => (
-            <option key={house.id} value={house.id}>
-              {house.title}
-            </option>
-          ))}
-        </Select>
+        <Select
+          name="houseId"
+          required
+          placeholder="Выберите домик"
+          options={houses.map((house) => ({ value: house.id, label: house.title }))}
+        />
       </Field>
 
       <Field label="Состояние">
-        <Select name="status" defaultValue="confirmed">
-          <option value="confirmed">Подтверждена</option>
-          <option value="hold">Придержана</option>
-          <option value="cancelled">Отменена</option>
-        </Select>
+        <Select
+          name="status"
+          defaultValue="confirmed"
+          options={[
+            { value: 'confirmed', label: 'Подтверждена' },
+            { value: 'hold', label: 'Придержана' },
+            { value: 'cancelled', label: 'Отменена' },
+          ]}
+        />
       </Field>
 
       <Field label="Заезд">
-        <Input name="dateFrom" type="date" required />
+        <DateField name="dateFrom" value={from} onChange={setFrom} required />
       </Field>
-      <Field label="Выезд">
-        <Input name="dateTo" type="date" required />
+      <Field label="Выезд" hint="День выезда свободен — в него может заехать следующий гость.">
+        <DateField name="dateTo" value={to} onChange={setTo} min={from} required />
       </Field>
 
       <div className="sm:col-span-2">

@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useFormAction } from '@/lib/use-form-action';
+import { Dropdown } from '@/components/form/Dropdown';
+import { DateField } from '@/components/form/DateField';
 import { submitRequest, type RequestState } from '@/lib/request-actions';
 import type { HouseRecord, TourRecord } from '@/lib/site-data';
 
@@ -10,8 +12,6 @@ const initial: RequestState = { ok: false };
 
 const field =
   'w-full rounded-[10px] border border-line-2 bg-bg-3 px-3 py-3 text-[15px] text-ink focus:border-transparent focus:outline-2 focus:outline-aurora';
-/* Тот же вид, что у обычных полей, плюс своя стрелка вместо системной. */
-const selectField = `${field} select`;
 const label = 'mb-2 block text-[12.5px] font-semibold text-ink-3';
 
 /* Ночи между заездом и выездом: день выезда домик уже не занимает. */
@@ -74,18 +74,12 @@ export function RequestForm({
         <label className={label} htmlFor="direction">
           Куда едете
         </label>
-        <select
+        <Dropdown
           id="direction"
           name="direction"
-          className={selectField}
           defaultValue={directions[0] ?? ''}
-        >
-          {directions.map((direction) => (
-            <option key={direction} value={direction}>
-              {direction}
-            </option>
-          ))}
-        </select>
+          options={directions.map((direction) => ({ value: direction, label: direction }))}
+        />
       </div>
 
       {tours.length > 0 ? (
@@ -93,14 +87,15 @@ export function RequestForm({
           <label className={label} htmlFor="tourId">
             Тур
           </label>
-          <select id="tourId" name="tourId" className={selectField} defaultValue="">
-            <option value="">Не выбран</option>
-            {tours.map((tour) => (
-              <option key={tour.id} value={tour.id}>
-                {tour.title}
-              </option>
-            ))}
-          </select>
+          <Dropdown
+            id="tourId"
+            name="tourId"
+            placeholder="Не выбран"
+            options={[
+              { value: '', label: 'Не выбран' },
+              ...tours.map((tour) => ({ value: tour.id, label: tour.title })),
+            ]}
+          />
         </div>
       ) : null}
 
@@ -109,20 +104,17 @@ export function RequestForm({
           <label className={label} htmlFor="houseId">
             Домик
           </label>
-          <select
+          <Dropdown
             id="houseId"
             name="houseId"
-            className={selectField}
             value={houseId}
-            onChange={(e) => setHouseId(e.target.value)}
-          >
-            <option value="">Не выбран</option>
-            {houses.map((house) => (
-              <option key={house.id} value={house.id}>
-                {house.title}
-              </option>
-            ))}
-          </select>
+            onChange={setHouseId}
+            placeholder="Не выбран"
+            options={[
+              { value: '', label: 'Не выбран' },
+              ...houses.map((house) => ({ value: house.id, label: house.title })),
+            ]}
+          />
         </div>
       ) : null}
 
@@ -130,14 +122,12 @@ export function RequestForm({
         <label className={label} htmlFor="dateFrom">
           Заезд
         </label>
-        <input
+        <DateField
           id="dateFrom"
           name="dateFrom"
-          type="date"
           min={today}
-          className={field}
           value={dateFrom}
-          onChange={(e) => setDateFrom(e.target.value)}
+          onChange={setDateFrom}
         />
       </div>
 
@@ -145,14 +135,12 @@ export function RequestForm({
         <label className={label} htmlFor="dateTo">
           Выезд
         </label>
-        <input
+        <DateField
           id="dateTo"
           name="dateTo"
-          type="date"
           min={dateFrom || today}
-          className={field}
           value={dateTo}
-          onChange={(e) => setDateTo(e.target.value)}
+          onChange={setDateTo}
         />
       </div>
 

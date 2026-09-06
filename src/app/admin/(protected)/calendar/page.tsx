@@ -1,7 +1,8 @@
 import { asc, eq, gte } from 'drizzle-orm';
 import { db } from '@/db';
 import { bookings, houses } from '@/db/schema';
-import { AdminHeading, ConfirmSubmit, Panel } from '@/components/admin/ui';
+import { AdminHeading, Panel } from '@/components/admin/ui';
+import { ActionForm } from '@/components/admin/ActionForm';
 import { occupiedDates, todayIso } from '@/lib/dates';
 import { BookingForm } from '@/components/admin/BookingForm';
 import { deleteBooking } from '@/lib/admin/request-actions';
@@ -143,12 +144,20 @@ export default async function CalendarPage() {
                       ? 'придержана'
                       : 'отменена'}
                 </span>
-                <form action={deleteBooking} className="ml-auto">
+                <ActionForm
+                  action={deleteBooking}
+                  success="Даты снова свободны"
+                  confirm="Удалить бронь? Даты снова станут свободными."
+                  className="ml-auto"
+                >
                   <input type="hidden" name="id" value={booking.id} />
-                  <ConfirmSubmit message="Удалить бронь? Даты снова станут свободными.">
+                  <button
+                    type="submit"
+                    className="border-busy/40 text-busy hover:bg-busy/10 hover:border-busy/70 cursor-pointer rounded-full border px-3.5 py-1.5 text-[12.5px] font-semibold transition"
+                  >
                     Удалить
-                  </ConfirmSubmit>
-                </form>
+                  </button>
+                </ActionForm>
               </div>
             ))}
           </div>

@@ -16,8 +16,10 @@ import {
   type FieldDef,
 } from '@/lib/admin/block-fields';
 import { Icon } from './icons';
+import { useToast } from './Toast';
 import { MediaMultiPicker, MediaPicker, type MediaOption } from './MediaPicker';
 import { Input, Select, Textarea } from './ui';
+import { RichText } from './RichText';
 
 /* Редактор держит массив блоков в состоянии и отправляет его одной кнопкой.
    Так владелец может двигать блоки и править несколько сразу, не теряя правки
@@ -66,6 +68,10 @@ function FieldControl({
           onChange={(e) => onChange(e.target.value)}
         />
       );
+    case 'rich':
+      return (
+        <RichText value={typeof value === 'string' ? value : ''} onChange={onChange} />
+      );
     case 'number':
       return (
         <Input
@@ -96,19 +102,14 @@ function FieldControl({
     case 'select':
       return (
         <Select
+          name={field.name}
+          options={field.options}
           value={value === undefined || value === null ? '' : String(value)}
-          onChange={(e) => {
-            const raw = e.target.value;
-            /* «Колонок» хранится числом, остальные select — строками. */
+          onChange={(raw) => {
+            /* «Колонок» хранится числом, остальные списки — строками. */
             onChange(/^\d+$/.test(raw) ? Number(raw) : raw);
           }}
-        >
-          {field.options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </Select>
+        />
       );
     case 'media':
       return (
@@ -258,6 +259,7 @@ export function BlockEditor({
      это стена полей, в которой невозможно найти нужное. */
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [picking, setPicking] = useState(false);
+  const toast = useToast();
   const [pending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -362,11 +364,18 @@ export function BlockEditor({
                       field.kind === 'list' ||
                       field.kind === 'mediaList' ||
                       field.kind === 'textarea' ||
+                      field.kind === 'rich' ||
                       ('wide' in field && field.wide);
                     return (
                       <div key={field.name} className={wide ? 'sm:col-span-2' : ''}>
                         {field.kind !== 'checkbox' ? (
-                          <Label hint={field.kind === 'textarea' ? field.hint : undefined}>
+                          <Label
+                            hint={
+                              field.kind === 'textarea' || field.kind === 'rich'
+                                ? field.hint
+                                : undefined
+                            }
+                          >
                             {field.label}
                           </Label>
                         ) : null}
@@ -448,12 +457,14 @@ export function BlockEditor({
               try {
                 await save(JSON.stringify(blocks));
                 setSaved(true);
+                toast.ok('Страница сохранена');
               } catch (cause) {
-                setError(
+                const message =
                   cause instanceof Error && cause.message
                     ? cause.message
-                    : 'Не удалось сохранить. Проверьте связь и попробуйте ещё раз.',
-                );
+                    : 'Не удалось сохранить. Проверьте связь и попробуйте ещё раз.';
+                setError(message);
+                toast.error(message);
               }
             });
           }}

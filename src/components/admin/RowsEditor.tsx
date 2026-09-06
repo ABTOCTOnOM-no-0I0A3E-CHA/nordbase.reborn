@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { ConfirmSubmit, Input, Submit, Textarea, inputClass } from './ui';
+import { Input, Submit, Textarea } from './ui';
+import { Dropdown } from '@/components/form/Dropdown';
+import { ActionForm } from './ActionForm';
 import { Icon, type IconName } from './icons';
 
 /* Один редактор на три плоских справочника: цены, вопросы, отзывы.
@@ -47,17 +49,11 @@ function Cell({ column, value }: { column: Column; value: string | number | bool
 
   if (column.type === 'select') {
     return (
-      <select
+      <Dropdown
         name={column.name}
+        options={column.options ?? []}
         defaultValue={value == null ? '' : String(value)}
-        className={`${inputClass} select`}
-      >
-        {(column.options ?? []).map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      />
     );
   }
 
@@ -181,7 +177,7 @@ export function RowsEditor({
               ) : null}
 
               <span className="flex flex-none items-center gap-1">
-                <form action={move}>
+                <ActionForm action={move}>
                   <input type="hidden" name="id" value={row.id} />
                   <input type="hidden" name="direction" value="up" />
                   <button
@@ -193,8 +189,8 @@ export function RowsEditor({
                   >
                     ↑
                   </button>
-                </form>
-                <form action={move}>
+                </ActionForm>
+                <ActionForm action={move}>
                   <input type="hidden" name="id" value={row.id} />
                   <input type="hidden" name="direction" value="down" />
                   <button
@@ -206,26 +202,34 @@ export function RowsEditor({
                   >
                     ↓
                   </button>
-                </form>
+                </ActionForm>
               </span>
             </div>
 
             {open ? (
               <div className="border-line border-t px-4 py-5">
-                <form action={save} className="grid gap-4">
+                <ActionForm action={save} success="Сохранено" className="grid gap-4">
                   <input type="hidden" name="id" value={row.id} />
                   <Fields columns={columns} values={row.values} />
                   <div>
                     <Submit>Сохранить</Submit>
                   </div>
-                </form>
+                </ActionForm>
                 {/* Отдельная форма: вложенные формы браузер не разрешает. */}
-                <form action={remove} className="border-line mt-4 border-t pt-4">
+                <ActionForm
+                  action={remove}
+                  success="Запись удалена"
+                  confirm="Удалить запись? Это действие нельзя отменить."
+                  className="border-line mt-4 border-t pt-4"
+                >
                   <input type="hidden" name="id" value={row.id} />
-                  <ConfirmSubmit message="Удалить запись? Это действие нельзя отменить.">
+                  <button
+                    type="submit"
+                    className="border-busy/40 text-busy hover:bg-busy/10 hover:border-busy/70 cursor-pointer rounded-full border px-3.5 py-1.5 text-[12.5px] font-semibold transition"
+                  >
                     Удалить
-                  </ConfirmSubmit>
-                </form>
+                  </button>
+                </ActionForm>
               </div>
             ) : null}
           </div>
@@ -233,7 +237,11 @@ export function RowsEditor({
       })}
 
       {adding ? (
-        <form action={save} className="border-aurora/40 bg-bg-3 grid gap-4 rounded-[14px] border p-4">
+        <ActionForm
+          action={save}
+          success="Добавлено"
+          className="border-aurora/40 bg-bg-3 grid gap-4 rounded-[14px] border p-4"
+        >
           <div className="flex items-center justify-between">
             <b className="text-[14.5px] font-semibold">{addLabel}</b>
             <button
@@ -248,7 +256,7 @@ export function RowsEditor({
           <div>
             <Submit>{addLabel}</Submit>
           </div>
-        </form>
+        </ActionForm>
       ) : (
         <button
           type="button"

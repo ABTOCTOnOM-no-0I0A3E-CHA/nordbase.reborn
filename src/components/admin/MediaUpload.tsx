@@ -1,13 +1,20 @@
 'use client';
 
 import { useFormAction } from '@/lib/use-form-action';
+import { useToast } from './Toast';
 import { uploadMedia, type UploadState } from '@/lib/admin/media-actions';
 import { Field, Input, Submit, inputClass } from './ui';
 
 const initial: UploadState = { uploaded: 0, errors: [] };
 
 export function MediaUpload() {
-  const { state, pending, onSubmit } = useFormAction(uploadMedia, initial);
+  const toast = useToast();
+  const { state, pending, onSubmit } = useFormAction(uploadMedia, initial, {
+    onSuccess: (next) => {
+      if (next.uploaded > 0) toast.ok(`Загружено фотографий: ${next.uploaded}`);
+      if (next.errors.length > 0) toast.error(next.errors.join('; '));
+    },
+  });
 
   return (
     <form

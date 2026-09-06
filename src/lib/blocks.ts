@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { sanitizeRichText } from './rich-text';
 
 /* Набор блоков фиксирован намеренно: клиент собирает из них что угодно,
    но не может изобрести новый тип и сломать вёрстку. Добавление типа —
@@ -10,6 +11,9 @@ import { z } from 'zod';
      Клиент добавил домик — блок обновился сам, трогать страницу не нужно. */
 
 const optionalText = z.string().trim().default('');
+/* Поля с форматированием чистим прямо в схеме — то есть на любом пути,
+   каким бы блок ни попал в базу. */
+const richText = z.string().transform(sanitizeRichText).default('');
 const mediaId = z.uuid().nullable().default(null);
 
 const heading = {
@@ -47,14 +51,13 @@ export const heroBlock = z.object({
 export const textBlock = z.object({
   type: z.literal('text'),
   ...heading,
-  /* абзацы, по одному на строку — без визуального редактора и его сюрпризов */
-  body: optionalText,
+  body: richText,
 });
 
 export const textMediaBlock = z.object({
   type: z.literal('textMedia'),
   ...heading,
-  body: optionalText,
+  body: richText,
   mediaId,
   side: z.enum(['left', 'right']).default('right'),
   badgeValue: optionalText,

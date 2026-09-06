@@ -7,6 +7,7 @@ import {
   type IntegrationState,
 } from '@/lib/admin/integration-actions';
 import { useFormAction } from '@/lib/use-form-action';
+import { useToast } from './Toast';
 import { Field, Input } from './ui';
 
 const initial: IntegrationState = {};
@@ -32,12 +33,19 @@ export function TelegramForm({
   /* Какое действие выполнять, говорит сама нажатая кнопка через поле intent:
      состояние тут не нужно и не даёт шанса на рассинхрон. */
   const [mode, setMode] = useState<'save' | 'test'>('save');
+  const toast = useToast();
   const { state, pending, onSubmit } = useFormAction(
     (previous: IntegrationState, formData: FormData) =>
       formData.get('intent') === 'test'
         ? testTelegram(previous, formData)
         : saveTelegram(previous, formData),
     initial,
+    {
+      onSuccess: (next) => {
+        if (next.error) toast.error(next.error);
+        else if (next.ok) toast.ok(next.ok);
+      },
+    },
   );
 
   return (

@@ -6,6 +6,7 @@ import { requests } from '@/db/schema';
 import { destroySession, getSessionUser } from '@/lib/auth/session';
 import { Nav } from '@/components/admin/Nav';
 import { Icon } from '@/components/admin/icons';
+import { ToastProvider } from '@/components/admin/Toast';
 
 /* Проверка здесь, а не в middleware: middleware крутится на edge и не ходит в БД,
    так что там можно проверить только наличие куки, но не её валидность. */
@@ -24,8 +25,9 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   }
 
   return (
-    <div className="lg:grid lg:min-h-dvh lg:grid-cols-[254px_1fr]">
-      <aside className="border-line bg-bg-0 flex flex-col border-b px-3 py-5 lg:sticky lg:top-0 lg:h-dvh lg:border-r lg:border-b-0">
+    <ToastProvider>
+      <div className="lg:grid lg:min-h-dvh lg:grid-cols-[254px_1fr]">
+      <aside className="border-line bg-bg-0 flex flex-col border-b px-3 py-5 lg:sticky lg:top-0 lg:h-dvh lg:overflow-y-auto lg:border-r lg:border-b-0">
         <Link href="/admin" className="mb-6 flex items-center gap-2.5 px-3">
           <span className="from-aurora via-ice to-violet size-6 flex-none rounded-full bg-conic" />
           <span className="font-display text-[15px] font-semibold">NORDBASE</span>
@@ -62,6 +64,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
       </aside>
 
       <main className="mx-auto w-full max-w-[1080px] px-5 py-8 sm:px-8 sm:py-10">{children}</main>
-    </div>
+      </div>
+    </ToastProvider>
   );
 }

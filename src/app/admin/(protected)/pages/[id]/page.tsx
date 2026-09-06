@@ -18,6 +18,7 @@ import {
   Textarea,
 } from '@/components/admin/ui';
 import { BlockEditor } from '@/components/admin/BlockEditor';
+import { ActionForm } from '@/components/admin/ActionForm';
 import { EntityForm } from '@/components/admin/EntityForm';
 
 export const metadata = { title: 'Страница' };
@@ -67,10 +68,14 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
             <Input name="seoTitle" defaultValue={page.seoTitle ?? ''} />
           </Field>
           <Field label="Состояние">
-            <Select name="status" defaultValue={page.status}>
-              <option value="draft">Черновик</option>
-              <option value="published">Опубликована</option>
-            </Select>
+            <Select
+              name="status"
+              defaultValue={page.status}
+              options={[
+                { value: 'draft', label: 'Черновик — на сайте не видна' },
+                { value: 'published', label: 'Опубликована' },
+              ]}
+            />
           </Field>
           <div className="sm:col-span-2">
             <Field label="Описание для поиска">
@@ -96,9 +101,11 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
           </p>
           <div className="grid gap-2">
             {versions.map((version) => (
-              <form
+              <ActionForm
                 key={version.id}
                 action={restorePageVersion}
+                success="Версия восстановлена"
+                confirm="Вернуть страницу к этой версии? Текущие блоки будут заменены."
                 className="border-line flex items-center gap-3 border-b pb-2 last:border-b-0"
               >
                 <input type="hidden" name="versionId" value={version.id} />
@@ -108,7 +115,7 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
                 <span className="ml-auto">
                   <Submit variant="ghost">Восстановить</Submit>
                 </span>
-              </form>
+              </ActionForm>
             ))}
           </div>
         </Panel>
@@ -116,12 +123,18 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
 
       <Panel className="mt-8">
         <h2 className="mb-3 text-[15px] font-bold">Удаление</h2>
-        <form action={deletePage}>
+        <ActionForm
+          action={deletePage}
+          confirm="Удалить страницу вместе со всеми блоками и версиями?"
+        >
           <input type="hidden" name="id" value={page.id} />
-          <ConfirmSubmit message="Удалить страницу вместе со всеми блоками и версиями?">
+          <button
+            type="submit"
+            className="border-busy/40 text-busy hover:bg-busy/10 hover:border-busy/70 cursor-pointer rounded-full border px-3.5 py-1.5 text-[12.5px] font-semibold transition"
+          >
             Удалить страницу
-          </ConfirmSubmit>
-        </form>
+          </button>
+        </ActionForm>
       </Panel>
     </div>
   );

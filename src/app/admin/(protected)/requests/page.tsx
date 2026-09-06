@@ -1,7 +1,8 @@
 import { desc, eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { houses, requests, tours } from '@/db/schema';
-import { AdminHeading, ConfirmSubmit, Panel, Select, Submit } from '@/components/admin/ui';
+import { AdminHeading, Panel, Select, Submit } from '@/components/admin/ui';
+import { ActionForm } from '@/components/admin/ActionForm';
 import { deleteRequest, setRequestStatus } from '@/lib/admin/request-actions';
 
 export const metadata = { title: 'Заявки' };
@@ -114,21 +115,41 @@ export default async function RequestsPage() {
               </dl>
 
               <div className="border-line flex flex-wrap items-center gap-2 border-t pt-3">
-                <form action={setRequestStatus} className="flex items-center gap-2">
+                <ActionForm
+                  action={setRequestStatus}
+                  success="Статус обновлён"
+                  className="flex items-center gap-2"
+                >
                   <input type="hidden" name="id" value={request.id} />
-                  <Select name="status" defaultValue={request.status} className="max-w-44">
-                    <option value="new">новая</option>
-                    <option value="in_work">в работе</option>
-                    <option value="confirmed">подтверждена</option>
-                    <option value="cancelled">отменена</option>
-                  </Select>
+                  <span className="w-48">
+                    <Select
+                      name="status"
+                      defaultValue={request.status}
+                      options={[
+                        { value: 'new', label: 'новая' },
+                        { value: 'in_work', label: 'в работе' },
+                        { value: 'confirmed', label: 'подтверждена' },
+                        { value: 'cancelled', label: 'отменена' },
+                      ]}
+                    />
+                  </span>
                   <Submit variant="ghost">Обновить</Submit>
-                </form>
+                </ActionForm>
 
-                <form action={deleteRequest} className="ml-auto">
+                <ActionForm
+                  action={deleteRequest}
+                  success="Заявка удалена"
+                  confirm="Удалить заявку навсегда?"
+                  className="ml-auto"
+                >
                   <input type="hidden" name="id" value={request.id} />
-                  <ConfirmSubmit message="Удалить заявку навсегда?">Удалить</ConfirmSubmit>
-                </form>
+                  <button
+                    type="submit"
+                    className="border-busy/40 text-busy hover:bg-busy/10 hover:border-busy/70 cursor-pointer rounded-full border px-3.5 py-1.5 text-[12.5px] font-semibold transition"
+                  >
+                    Удалить
+                  </button>
+                </ActionForm>
               </div>
             </Panel>
           ))}

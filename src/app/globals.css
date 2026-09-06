@@ -138,6 +138,68 @@ body {
   opacity: 0.6;
 }
 
+/* ---------- текст с форматированием ----------
+   Одни и те же правила для редактора в админке (.rich) и для вывода
+   на сайте (.prose-site): владелец должен видеть то же, что увидит гость. */
+.rich:empty::before {
+  content: attr(data-placeholder);
+  color: var(--color-ink-3);
+}
+
+.rich:focus {
+  outline-offset: 0;
+}
+
+.rich p,
+.prose-site p {
+  margin: 0;
+}
+
+.rich p + p,
+.prose-site p + p {
+  margin-top: 1rem;
+}
+
+.rich ul,
+.rich ol,
+.prose-site ul,
+.prose-site ol {
+  margin: 0.75rem 0;
+  padding-left: 1.35rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.rich ul,
+.prose-site ul {
+  list-style: disc;
+}
+
+.rich ol,
+.prose-site ol {
+  list-style: decimal;
+}
+
+.rich li::marker,
+.prose-site li::marker {
+  color: var(--color-aurora);
+}
+
+.rich b,
+.rich strong,
+.prose-site b,
+.prose-site strong {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.rich a,
+.prose-site a {
+  color: var(--color-ice);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 ::selection {
   background: var(--color-aurora);
   color: var(--color-aurora-ink);

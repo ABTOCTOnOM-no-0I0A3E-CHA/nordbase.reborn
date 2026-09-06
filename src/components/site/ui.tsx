@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { isMarkup, sanitizeRichText } from '@/lib/rich-text';
 
 export function Wrap({ children, className = '' }: { children: ReactNode; className?: string }) {
   return <div className={`mx-auto w-full max-w-[1200px] px-5 sm:px-[30px] ${className}`}>{children}</div>;
@@ -84,8 +85,23 @@ export function Btn({ href, children, variant = 'solid' }: BtnProps) {
   );
 }
 
-/* Многострочный текст из админки: пустая строка разделяет абзацы. */
+/* Текст из админки. Новые блоки хранят разметку из редактора, старые —
+   обычный текст с переносами строк; поддерживаем оба вида.
+   Разметку чистим ещё раз при выводе: в базу может писать не только форма. */
 export function Prose({ text, className = '' }: { text: string; className?: string }) {
+  if (!text.trim()) return null;
+
+  if (isMarkup(text)) {
+    const html = sanitizeRichText(text);
+    if (!html) return null;
+    return (
+      <div
+        className={`prose-site text-ink-2 space-y-4 ${className}`}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    );
+  }
+
   const paragraphs = text
     .split(/\n{2,}|\r\n{2,}/)
     .map((p) => p.trim())

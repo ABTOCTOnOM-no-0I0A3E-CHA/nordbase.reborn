@@ -32,7 +32,7 @@ function Hero({ block, data }: { block: Extract<Block, { type: 'hero' }>; data: 
       className={`relative flex items-end overflow-hidden ${
         /* svh, а не vh: на телефоне адресная строка то появляется, то прячется,
            и обложка на 100vh прыгала бы при каждом скролле. */
-        block.height === 'compact' ? 'min-h-[min(72svh,620px)]' : 'min-h-svh'
+        block.height === 'compact' ? 'min-h-[min(56svh,480px)]' : 'min-h-svh'
       }`}
     >
       <div className="absolute inset-0 z-0">
@@ -55,20 +55,38 @@ function Hero({ block, data }: { block: Extract<Block, { type: 'hero' }>; data: 
       {/* вуаль под шапкой: сияние уходит в глубину, навигация остаётся читаемой */}
       <div className="from-bg/90 pointer-events-none absolute inset-x-0 top-0 z-[3] h-[190px] bg-gradient-to-b to-transparent" />
 
-      <div className="relative z-[4] w-full pt-[170px] pb-11">
+      {/* Отступ сверху обходит фиксированную шапку. У невысокой обложки он
+          был таким же, как у полноэкранной, и съедал половину блока. */}
+      <div
+        className={`relative z-[4] w-full ${
+          block.height === 'compact' ? 'pt-[120px] pb-8' : 'pt-[170px] pb-11'
+        }`}
+      >
         <Wrap>
           {block.eyebrow ? <Eyebrow>{block.eyebrow}</Eyebrow> : null}
           {block.title ? (
-            <h1 className="mt-5 mb-6 max-w-[15ch] text-[clamp(34px,5.2vw,62px)] leading-[1.1] font-bold tracking-[-0.025em] text-balance">
+            <h1
+              className={`max-w-[15ch] font-bold tracking-[-0.025em] text-balance ${
+                block.height === 'compact'
+                  ? 'mt-3 mb-4 text-[clamp(30px,4.4vw,48px)] leading-[1.1]'
+                  : 'mt-5 mb-6 text-[clamp(34px,5.2vw,62px)] leading-[1.1]'
+              }`}
+            >
               {block.title}
             </h1>
           ) : null}
           {block.lead ? (
-            <p className="text-ink-hero mb-8 max-w-[56ch] text-[18px]">{block.lead}</p>
+            <p
+              className={`text-ink-hero max-w-[56ch] text-[18px] ${
+                block.height === 'compact' ? 'mb-5' : 'mb-8'
+              }`}
+            >
+              {block.lead}
+            </p>
           ) : null}
 
           {block.primaryLabel || block.secondaryLabel ? (
-            <div className="mb-11 flex flex-wrap gap-3">
+            <div className={`flex flex-wrap gap-3 ${block.height === 'compact' ? 'mb-0' : 'mb-11'}`}>
               {block.primaryLabel ? (
                 <Btn href={safeHref(block.primaryHref) ?? '#request'}>{block.primaryLabel}</Btn>
               ) : null}

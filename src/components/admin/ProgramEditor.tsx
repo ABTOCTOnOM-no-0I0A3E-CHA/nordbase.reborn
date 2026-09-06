@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { Input } from './ui';
+import { useToast } from './Toast';
 
 export type ProgramDay = { title: string; stops: { title: string; isFinish: boolean }[] };
 
@@ -16,6 +17,7 @@ export function ProgramEditor({
   save: (json: string) => Promise<void>;
 }) {
   const [days, setDays] = useState<ProgramDay[]>(initial);
+  const toast = useToast();
   const [pending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -153,12 +155,14 @@ export function ProgramEditor({
               try {
                 await save(JSON.stringify(cleaned));
                 setSaved(true);
+                toast.ok('Программа тура сохранена');
               } catch (cause) {
-                setError(
+                const message =
                   cause instanceof Error && cause.message
                     ? cause.message
-                    : 'Не удалось сохранить программу.',
-                );
+                    : 'Не удалось сохранить программу.';
+                setError(message);
+                toast.error(message);
               }
             });
           }}

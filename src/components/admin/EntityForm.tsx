@@ -1,6 +1,7 @@
 'use client';
 
 import { useFormAction } from '@/lib/use-form-action';
+import { useToast } from './Toast';
 import type { ReactNode } from 'react';
 import type { FormState } from '@/lib/admin/content-actions';
 import { Submit } from './ui';
@@ -19,7 +20,13 @@ export function EntityForm({
   children: ReactNode;
   submitLabel: string;
 }) {
-  const { state, pending, onSubmit } = useFormAction(action, initial);
+  const toast = useToast();
+  const { state, pending, onSubmit } = useFormAction(action, initial, {
+    onSuccess: (next) => {
+      if (next.error) toast.error(next.error);
+      else toast.ok('Сохранено');
+    },
+  });
 
   return (
     <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">

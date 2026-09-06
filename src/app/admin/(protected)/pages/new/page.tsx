@@ -30,10 +30,14 @@ export default function NewPage() {
             <Textarea name="seoDescription" rows={2} />
           </Field>
           <Field label="Состояние">
-            <Select name="status" defaultValue="draft">
-              <option value="draft">Черновик</option>
-              <option value="published">Опубликована</option>
-            </Select>
+            <Select
+              name="status"
+              defaultValue="draft"
+              options={[
+                { value: 'draft', label: 'Черновик — на сайте не видна' },
+                { value: 'published', label: 'Опубликована' },
+              ]}
+            />
           </Field>
         </EntityForm>
       </Panel>

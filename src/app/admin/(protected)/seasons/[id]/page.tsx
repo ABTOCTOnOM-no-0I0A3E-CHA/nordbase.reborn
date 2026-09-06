@@ -50,18 +50,26 @@ export default async function SeasonEditor({ params }: { params: Promise<{ id: s
           </Field>
 
           <Field label="Цвет полоски">
-            <Select name="accent" defaultValue={season?.accent ?? 'ice'}>
-              <option value="aurora">Зелёный</option>
-              <option value="ice">Голубой</option>
-              <option value="violet">Фиолетовый</option>
-              <option value="amber">Тёплый</option>
-            </Select>
+            <Select
+              name="accent"
+              defaultValue={season?.accent ?? 'ice'}
+              options={[
+                { value: 'aurora', label: 'Зелёный' },
+                { value: 'ice', label: 'Голубой' },
+                { value: 'violet', label: 'Фиолетовый' },
+                { value: 'amber', label: 'Тёплый' },
+              ]}
+            />
           </Field>
           <Field label="Состояние">
-            <Select name="status" defaultValue={season?.status ?? 'draft'}>
-              <option value="draft">Черновик</option>
-              <option value="published">На сайте</option>
-            </Select>
+            <Select
+              name="status"
+              defaultValue={season?.status ?? 'draft'}
+              options={[
+                { value: 'draft', label: 'Черновик — гость не увидит' },
+                { value: 'published', label: 'На сайте' },
+              ]}
+            />
           </Field>
 
           <div className="sm:col-span-2">

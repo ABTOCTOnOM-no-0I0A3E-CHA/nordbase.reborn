@@ -3,6 +3,7 @@ import { getSessionUser } from '@/lib/auth/session';
 import { saveSettings } from '@/lib/admin/settings-actions';
 import { AdminHeading, Field, Input, Panel, Submit, Textarea } from '@/components/admin/ui';
 import { MenuFields } from '@/components/admin/MenuFields';
+import { ActionForm } from '@/components/admin/ActionForm';
 
 export const metadata = { title: 'Настройки' };
 
@@ -27,7 +28,11 @@ export default async function SettingsPage() {
       ) : null}
 
       <Panel>
-        <form action={saveSettings} className="grid gap-4 sm:grid-cols-2">
+        <ActionForm
+          action={saveSettings}
+          success="Настройки сохранены"
+          className="grid gap-4 sm:grid-cols-2"
+        >
           {/* Менеджеру форма показывается только для чтения: раньше нажатие
               приводило к странице ошибки от requireOwner. */}
           <fieldset disabled={!isOwner} className="contents">
@@ -109,7 +114,7 @@ export default async function SettingsPage() {
               <Submit>Сохранить настройки</Submit>
             </div>
           </fieldset>
-        </form>
+        </ActionForm>
       </Panel>
     </div>
   );

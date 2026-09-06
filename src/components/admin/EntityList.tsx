@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ConfirmSubmit } from './ui';
+import { ActionForm } from './ActionForm';
 import { Icon, type IconName } from './icons';
 
 /* Общий список для домиков, туров и сезонов: у всех троих одинаковая механика —
@@ -59,7 +59,7 @@ export function EntityList({
           </span>
 
           <span className="flex flex-none items-center gap-1">
-            <form action={move}>
+            <ActionForm action={move}>
               <input type="hidden" name="id" value={row.id} />
               <input type="hidden" name="direction" value="up" />
               <button
@@ -71,8 +71,8 @@ export function EntityList({
               >
                 ↑
               </button>
-            </form>
-            <form action={move}>
+            </ActionForm>
+            <ActionForm action={move}>
               <input type="hidden" name="id" value={row.id} />
               <input type="hidden" name="direction" value="down" />
               <button
@@ -84,17 +84,22 @@ export function EntityList({
               >
                 ↓
               </button>
-            </form>
+            </ActionForm>
 
             {remove ? (
-              <form action={remove}>
+              <ActionForm
+                action={remove}
+                success={`«${row.title}» удалён`}
+                confirm={`Удалить «${row.title}»? ${removeWarning ?? ''} Это действие нельзя отменить.`}
+              >
                 <input type="hidden" name="id" value={row.id} />
-                <ConfirmSubmit
-                  message={`Удалить «${row.title}»? ${removeWarning ?? ''} Это действие нельзя отменить.`}
+                <button
+                  type="submit"
+                  className="border-busy/40 text-busy hover:bg-busy/10 hover:border-busy/70 cursor-pointer rounded-full border px-3.5 py-1.5 text-[12.5px] font-semibold transition"
                 >
                   Удалить
-                </ConfirmSubmit>
-              </form>
+                </button>
+              </ActionForm>
             ) : null}
           </span>
         </div>

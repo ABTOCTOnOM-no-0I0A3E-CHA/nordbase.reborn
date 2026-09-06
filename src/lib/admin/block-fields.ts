@@ -9,6 +9,8 @@ import type { IconName } from '@/components/admin/icons';
 export type FieldDef =
   | { kind: 'text'; name: string; label: string; placeholder?: string; wide?: boolean }
   | { kind: 'textarea'; name: string; label: string; rows?: number; hint?: string }
+  /* Текст с форматированием: жирный, курсив, списки, ссылки. */
+  | { kind: 'rich'; name: string; label: string; hint?: string }
   | { kind: 'number'; name: string; label: string }
   | { kind: 'checkbox'; name: string; label: string }
   | { kind: 'select'; name: string; label: string; options: { value: string; label: string }[] }
@@ -31,18 +33,18 @@ const accentOptions = [
 
 export const BLOCK_FIELDS: Record<BlockType, FieldDef[]> = {
   hero: [
-    ...heading,
-    { kind: 'textarea', name: 'lead', label: 'Вводный текст', rows: 3 },
-    { kind: 'media', name: 'mediaId', label: 'Фон' },
+    { kind: 'media', name: 'mediaId', label: 'Фоновое фото' },
     {
       kind: 'select',
       name: 'height',
-      label: 'Высота',
+      label: 'Высота блока',
       options: [
-        { value: 'full', label: 'На весь экран' },
-        { value: 'compact', label: 'Пониже' },
+        { value: 'full', label: 'Во весь экран' },
+        { value: 'compact', label: 'Невысокая, для внутренних страниц' },
       ],
     },
+    ...heading,
+    { kind: 'textarea', name: 'lead', label: 'Вводный текст', rows: 3 },
     { kind: 'checkbox', name: 'aurora', label: 'Анимированное северное сияние' },
     { kind: 'text', name: 'primaryLabel', label: 'Главная кнопка' },
     { kind: 'text', name: 'primaryHref', label: 'Ссылка главной кнопки', placeholder: '#request' },
@@ -64,18 +66,12 @@ export const BLOCK_FIELDS: Record<BlockType, FieldDef[]> = {
 
   text: [
     ...heading,
-    {
-      kind: 'textarea',
-      name: 'body',
-      label: 'Текст',
-      rows: 8,
-      hint: 'Пустая строка между абзацами разделяет их на сайте.',
-    },
+    { kind: 'rich', name: 'body', label: 'Текст' },
   ],
 
   textMedia: [
     ...heading,
-    { kind: 'textarea', name: 'body', label: 'Текст', rows: 6 },
+    { kind: 'rich', name: 'body', label: 'Текст' },
     { kind: 'media', name: 'mediaId', label: 'Фото' },
     {
       kind: 'select',

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useFormStatus } from 'react-dom';
 import type { ReactNode } from 'react';
 import { Icon, type IconName } from './icons';
+import { Dropdown, type Option } from '@/components/form/Dropdown';
 
 export const inputClass =
   'w-full rounded-[10px] border border-line-2 bg-bg-2 px-3.5 py-2.5 text-[14.5px] text-ink placeholder:text-ink-3 transition hover:border-ink-3/60 focus:border-transparent focus:outline-2 focus:outline-aurora';
@@ -36,8 +37,39 @@ export function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement
   return <textarea {...props} className={`${inputClass} resize-y ${props.className ?? ''}`} />;
 }
 
-export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select {...props} className={`${inputClass} select ${props.className ?? ''}`} />;
+/* Обёртка над своим выпадающим списком: нативный select рисует система,
+   и на тёмной теме он выглядит чужеродно и по-разному в разных браузерах. */
+export function Select({
+  name,
+  options,
+  defaultValue,
+  value,
+  onChange,
+  placeholder,
+  required,
+  id,
+}: {
+  name: string;
+  options: Option[];
+  defaultValue?: string;
+  value?: string;
+  onChange?: (value: string) => void;
+  placeholder?: string;
+  required?: boolean;
+  id?: string;
+}) {
+  return (
+    <Dropdown
+      name={name}
+      options={options}
+      defaultValue={defaultValue}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      required={required}
+      id={id}
+    />
+  );
 }
 
 /* По умолчанию состояние берём из useFormStatus — кнопка сама знает, что

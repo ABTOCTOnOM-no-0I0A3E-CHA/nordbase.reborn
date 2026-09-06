@@ -66,10 +66,14 @@ export default async function HouseEditor({ params }: { params: Promise<{ id: st
           </Field>
 
           <Field label="Состояние">
-            <Select name="status" defaultValue={house?.status ?? 'draft'}>
-              <option value="draft">Черновик</option>
-              <option value="published">На сайте</option>
-            </Select>
+            <Select
+              name="status"
+              defaultValue={house?.status ?? 'draft'}
+              options={[
+                { value: 'draft', label: 'Черновик — гость не увидит' },
+                { value: 'published', label: 'На сайте' },
+              ]}
+            />
           </Field>
 
           <div className="sm:col-span-2">

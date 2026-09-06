@@ -201,12 +201,12 @@ export function RequestForm({
         <label className={label} htmlFor="guests">
           Гостей
         </label>
-        <div className="border-line-2 flex w-[146px] overflow-hidden rounded-[10px] border">
+        <div className="border-line-2 flex h-12 w-[160px] overflow-hidden rounded-[10px] border">
           <button
             type="button"
             aria-label="Меньше гостей"
             onClick={() => setGuests((n) => Math.max(1, n - 1))}
-            className="bg-bg-3 hover:bg-bg-4 w-10 cursor-pointer text-[17px]"
+            className="bg-bg-3 hover:bg-bg-4 flex w-11 cursor-pointer items-center justify-center text-[17px]"
           >
             −
           </button>
@@ -215,7 +215,7 @@ export function RequestForm({
             type="button"
             aria-label="Больше гостей"
             onClick={() => setGuests((n) => Math.min(20, n + 1))}
-            className="bg-bg-3 hover:bg-bg-4 w-10 cursor-pointer text-[17px]"
+            className="bg-bg-3 hover:bg-bg-4 flex w-11 cursor-pointer items-center justify-center text-[17px]"
           >
             +
           </button>
@@ -288,7 +288,9 @@ export function RequestForm({
         <button
           type="submit"
           disabled={pending || leaving}
-          className="bg-aurora text-aurora-ink hover:bg-aurora-hi cursor-pointer rounded-full px-7 py-3 font-semibold disabled:opacity-60"
+          /* На телефоне кнопка во всю ширину: она последняя в форме и в неё
+             целятся большим пальцем одной рукой. */
+          className="bg-aurora text-aurora-ink hover:bg-aurora-hi w-full cursor-pointer rounded-full px-7 py-3.5 font-semibold disabled:opacity-60 sm:w-auto sm:py-3"
         >
           {pending || leaving ? 'Отправляем…' : submitLabel}
         </button>

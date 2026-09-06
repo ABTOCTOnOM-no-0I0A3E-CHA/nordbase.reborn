@@ -20,6 +20,19 @@ export function AdminShell({
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
+  /* С ширины ноутбука меню — обычная колонка и никуда не ездит. Считаем это в
+     JS, потому что положение задаётся инлайн-стилем, а он медиа-запросов не
+     знает. До гидрации работает правило .admin-drawer из globals.css. */
+  const [phone, setPhone] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const query = window.matchMedia('(min-width: 1024px)');
+    const sync = () => setPhone(!query.matches);
+    sync();
+    query.addEventListener('change', sync);
+    return () => query.removeEventListener('change', sync);
+  }, []);
+
   /* Перешли в раздел — панель закрывается сама. */
   useEffect(() => setOpen(false), [pathname]);
 
@@ -73,10 +86,16 @@ export function AdminShell({
         />
       ) : null}
 
+      {/* Сдвиг задан правилом .admin-drawer в globals.css, а не утилитами:
+          с ними состояние «открыто» зависело бы от того, попал ли нужный класс
+          в сборку, и панель молча оставалась бы за экраном. */}
       <aside
-        className={`bg-bg-0 border-line fixed inset-y-0 left-0 z-50 flex w-[272px] flex-col overflow-y-auto border-r px-3 py-5 transition-transform duration-200 lg:sticky lg:top-0 lg:z-auto lg:h-dvh lg:w-auto lg:translate-x-0 ${
-          open ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        /* Пока ширина неизвестна (сервер и первый кадр) положение задаёт CSS:
+           иначе на ноутбуке панель успевала бы уехать и въехать обратно. */
+        style={{
+          transform: phone ? (open ? 'translateX(0)' : 'translateX(-100%)') : undefined,
+        }}
+        className="admin-drawer bg-bg-0 border-line fixed inset-y-0 left-0 z-50 flex w-[272px] flex-col overflow-y-auto border-r px-3 py-5 lg:sticky lg:inset-y-auto lg:top-0 lg:left-auto lg:z-auto lg:h-dvh lg:w-auto"
       >
         <div className="mb-4 flex items-center justify-end lg:hidden">
           <button

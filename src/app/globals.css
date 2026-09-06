@@ -288,6 +288,37 @@ body {
   }
 }
 
+/* ---------- выдвижное меню панели ----------
+   На телефоне список разделов уезжает за левый край и выезжает по кнопке.
+   С ширины ноутбука это обычная колонка, которая всегда на месте. */
+.admin-drawer {
+  transform: translateX(-100%);
+  transition: transform 200ms ease;
+}
+
+@media (min-width: 1024px) {
+  .admin-drawer {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-drawer {
+    transition: none;
+  }
+}
+
+/* Шахматка занятости: подпись домика слева. */
+.occ {
+  --occ-label: 132px;
+}
+
+@media (max-width: 639px) {
+  .occ {
+    --occ-label: 88px;
+  }
+}
+
 /* ---------- телефон ----------
    Safari на iOS увеличивает страницу, когда палец попадает в поле со шрифтом
    мельче 16px, и обратно уже не отматывает — сайт «уезжает» вбок. Правило

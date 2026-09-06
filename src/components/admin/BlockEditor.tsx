@@ -171,7 +171,7 @@ function ListField({
                 aria-label="Выше"
                 disabled={index === 0}
                 onClick={() => swap(index, index - 1)}
-                className="text-ink-3 hover:text-ink cursor-pointer px-1 disabled:opacity-30"
+                className="text-ink-3 hover:text-ink flex size-9 cursor-pointer items-center justify-center rounded-[8px] disabled:opacity-30"
               >
                 ↑
               </button>
@@ -180,7 +180,7 @@ function ListField({
                 aria-label="Ниже"
                 disabled={index === items.length - 1}
                 onClick={() => swap(index, index + 1)}
-                className="text-ink-3 hover:text-ink cursor-pointer px-1 disabled:opacity-30"
+                className="text-ink-3 hover:text-ink flex size-9 cursor-pointer items-center justify-center rounded-[8px] disabled:opacity-30"
               >
                 ↓
               </button>
@@ -188,7 +188,7 @@ function ListField({
                 type="button"
                 aria-label="Удалить"
                 onClick={() => onChange(items.filter((_, i) => i !== index))}
-                className="text-ink-3 hover:text-busy cursor-pointer px-1"
+                className="text-ink-3 hover:text-busy flex size-9 cursor-pointer items-center justify-center rounded-[8px]"
               >
                 ✕
               </button>
@@ -296,7 +296,10 @@ export function BlockEditor({
               <button
                 type="button"
                 onClick={() => setOpenIndex(open ? null : index)}
-                className="flex flex-1 cursor-pointer items-center gap-3 text-left"
+                /* min-w-0 — иначе truncate в описании блока распирает шапку, и
+                   кнопки порядка с «Убрать» уезжают за край карточки: на
+                   телефоне блок нельзя было ни переставить, ни удалить. */
+                className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left"
               >
                 <span
                   className={`flex size-9 flex-none items-center justify-center rounded-[10px] ${
@@ -320,7 +323,7 @@ export function BlockEditor({
                   title="Переместить выше"
                   disabled={index === 0}
                   onClick={() => swap(index, index - 1)}
-                  className="text-ink-3 hover:bg-bg-2 hover:text-ink cursor-pointer rounded-[8px] px-2 py-1.5 disabled:opacity-25"
+                  className="text-ink-3 hover:bg-bg-2 hover:text-ink flex size-10 flex-none cursor-pointer items-center justify-center rounded-[8px] disabled:opacity-25"
                 >
                   ↑
                 </button>
@@ -330,20 +333,32 @@ export function BlockEditor({
                   title="Переместить ниже"
                   disabled={index === blocks.length - 1}
                   onClick={() => swap(index, index + 1)}
-                  className="text-ink-3 hover:bg-bg-2 hover:text-ink cursor-pointer rounded-[8px] px-2 py-1.5 disabled:opacity-25"
+                  className="text-ink-3 hover:bg-bg-2 hover:text-ink flex size-10 flex-none cursor-pointer items-center justify-center rounded-[8px] disabled:opacity-25"
                 >
                   ↓
                 </button>
                 <button
                   type="button"
+                  aria-label="Убрать блок"
+                  title="Убрать блок"
                   onClick={() => {
                     if (!window.confirm('Убрать блок со страницы?')) return;
                     setBlocks((prev) => prev.filter((_, i) => i !== index));
                     setOpenIndex(null);
                   }}
-                  className="text-ink-3 hover:bg-busy/10 hover:text-busy cursor-pointer rounded-[8px] px-2.5 py-1.5 text-[12.5px]"
+                  className="text-ink-3 hover:bg-busy/10 hover:text-busy flex size-10 cursor-pointer items-center justify-center rounded-[8px]"
                 >
-                  Убрать
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="size-[17px]"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.6}
+                    strokeLinecap="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M5 7h14M10 7V5h4v2M6 7l1 13h10l1-13M10 11v6M14 11v6" />
+                  </svg>
                 </button>
               </span>
             </div>

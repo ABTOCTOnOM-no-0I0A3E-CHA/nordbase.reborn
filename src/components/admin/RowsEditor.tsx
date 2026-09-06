@@ -196,7 +196,7 @@ export function RowsEditor({
                     disabled={index === 0}
                     aria-label="Выше"
                     title="Выше"
-                    className="text-ink-3 hover:bg-bg-2 hover:text-ink cursor-pointer rounded-[8px] px-2 py-1.5 disabled:opacity-25"
+                    className="text-ink-3 hover:bg-bg-2 hover:text-ink flex size-10 flex-none cursor-pointer items-center justify-center rounded-[8px] disabled:opacity-25"
                   >
                     ↑
                   </button>
@@ -209,7 +209,7 @@ export function RowsEditor({
                     disabled={index === rows.length - 1}
                     aria-label="Ниже"
                     title="Ниже"
-                    className="text-ink-3 hover:bg-bg-2 hover:text-ink cursor-pointer rounded-[8px] px-2 py-1.5 disabled:opacity-25"
+                    className="text-ink-3 hover:bg-bg-2 hover:text-ink flex size-10 flex-none cursor-pointer items-center justify-center rounded-[8px] disabled:opacity-25"
                   >
                     ↓
                   </button>

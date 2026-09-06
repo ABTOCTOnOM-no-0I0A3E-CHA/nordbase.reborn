@@ -210,7 +210,9 @@ export function Occupancy({
   }, [bookings, firstIso, lastIso]);
 
   const todayDay = today.slice(0, 7) === firstIso.slice(0, 7) ? Number(today.slice(8, 10)) : null;
-  const columns = `132px repeat(${total}, minmax(0, 1fr))`;
+  /* Ширина колонки с названием домика приходит из CSS: на телефоне 132px
+     съедали треть и без того узкой таблицы. */
+  const columns = `var(--occ-label) repeat(${total}, minmax(0, 1fr))`;
   const houseById = useMemo(
     () => new Map(houses.map((house) => [house.id, house.title])),
     [houses],
@@ -267,8 +269,10 @@ export function Occupancy({
 
       {/* Горизонтальная прокрутка: 31 колонка на узком экране не помещается,
           но резать месяц пополам хуже, чем дать его пролистать. */}
+      <p className="text-ink-3 mb-2 text-[12px] sm:hidden">Таблицу можно листать вбок →</p>
+
       <div className="border-line bg-bg-3 overflow-x-auto rounded-[16px] border">
-        <div className="min-w-[760px] p-4">
+        <div className="occ min-w-[680px] p-3 sm:min-w-[760px] sm:p-4">
           {/* Числа месяца и дни недели */}
           <div className="mb-2 grid gap-px" style={{ gridTemplateColumns: columns }}>
             <span />

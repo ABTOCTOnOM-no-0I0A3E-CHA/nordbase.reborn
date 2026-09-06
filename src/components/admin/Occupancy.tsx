@@ -1,13 +1,12 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { occupiedDates } from '@/lib/dates';
 
 /* Шахматка занятости — так это устроено в системах управления бронями:
    домики строками, дни месяца колонками, а бронь — сплошной полосой поперёк
-   своих дат с именем гостя внутри. Прошлая версия рисовала 30 отдельных
-   квадратиков в строку: понять, где начинается и заканчивается заезд, было
-   невозможно.
+   своих дат с именем гостя внутри.
 
    Сверху — сводка по дню. Домик не единственный ограниченный ресурс: сколько
    бы групп ни ехало, вездеход берёт до 8 человек за поездку. Поэтому в сводке
@@ -41,6 +40,8 @@ export type Booking = {
   note: string;
 };
 
+type Bar = { id: string; start: number; span: number; booking: Booking };
+
 function daysInMonth(year: number, month: number): number {
   return new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
 }
@@ -54,19 +55,117 @@ function weekday(year: number, month: number, day: number): number {
   return (new Date(Date.UTC(year, month, day)).getUTCDay() + 6) % 7;
 }
 
+function human(value: string): string {
+  const [year, month, day] = value.split('-');
+  return `${day}.${month}.${year}`;
+}
+
+function nightsBetween(from: string, to: string): number {
+  return Math.round(
+    (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000,
+  );
+}
+
+function nightWord(count: number): string {
+  const tail = count % 10;
+  const teen = count % 100 >= 11 && count % 100 <= 14;
+  if (!teen && tail === 1) return 'ночь';
+  if (!teen && tail >= 2 && tail <= 4) return 'ночи';
+  return 'ночей';
+}
+
+/* Карточка при наведении. Рисуется порталом: у строк и панелей вокруг стоит
+   overflow, обычный absolute-блок она бы обрезала. */
+function Hint({
+  rect,
+  house,
+  booking,
+}: {
+  rect: DOMRect;
+  house: string;
+  booking: Booking;
+}) {
+  const width = 268;
+  const left = Math.min(Math.max(8, rect.left), window.innerWidth - width - 8);
+  const above = rect.top > 190;
+
+  const nights = nightsBetween(booking.dateFrom, booking.dateTo);
+
+  return createPortal(
+    <div
+      className="border-line-2 bg-bg-2 pointer-events-none fixed z-[110] rounded-[12px] border p-3.5 shadow-[0_18px_40px_rgb(0_0_0/0.5)]"
+      style={{
+        width,
+        left,
+        top: above ? rect.top - 12 : rect.bottom + 12,
+        transform: above ? 'translateY(-100%)' : undefined,
+      }}
+    >
+      <div className="mb-2 flex items-center gap-2">
+        <span
+          className={`size-2.5 rounded-full ${
+            booking.status === 'confirmed' ? 'bg-busy' : 'bg-amber'
+          }`}
+        />
+        <b className="text-[14px]">{house}</b>
+        <span
+          className={`ml-auto rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+            booking.status === 'confirmed' ? 'bg-busy text-bg' : 'bg-amber text-bg'
+          }`}
+        >
+          {booking.status === 'confirmed' ? 'занято' : 'ожидает'}
+        </span>
+      </div>
+
+      <dl className="text-ink-2 grid gap-1 text-[12.5px]">
+        <div className="flex justify-between gap-3">
+          <dt className="text-ink-3">Заезд</dt>
+          <dd>{human(booking.dateFrom)}</dd>
+        </div>
+        <div className="flex justify-between gap-3">
+          <dt className="text-ink-3">Выезд</dt>
+          <dd>{human(booking.dateTo)}</dd>
+        </div>
+        <div className="flex justify-between gap-3">
+          <dt className="text-ink-3">Ночей</dt>
+          <dd>
+            {nights} {nightWord(nights)}
+          </dd>
+        </div>
+        <div className="flex justify-between gap-3">
+          <dt className="text-ink-3">Гостей</dt>
+          <dd>{booking.guests || '—'}</dd>
+        </div>
+      </dl>
+
+      {booking.note ? (
+        <p className="border-line text-ink mt-2 border-t pt-2 text-[12.5px]">{booking.note}</p>
+      ) : null}
+
+      <p className="text-aurora mt-2 text-[11.5px]">Нажмите, чтобы изменить или убрать</p>
+    </div>,
+    document.body,
+  );
+}
+
 export function Occupancy({
   houses,
   bookings,
   today,
   vehicleCapacity,
+  selectedId,
+  onSelect,
 }: {
   houses: House[];
   bookings: Booking[];
   today: string;
   /* Сколько человек увозит вездеход за одну поездку. */
   vehicleCapacity: number;
+  selectedId?: string | null;
+  onSelect?: (id: string) => void;
 }) {
   const [offset, setOffset] = useState(0);
+  const [hint, setHint] = useState<{ rect: DOMRect; bar: Bar } | null>(null);
 
   const view = useMemo(() => {
     const base = new Date(`${today}T00:00:00Z`);
@@ -82,7 +181,7 @@ export function Occupancy({
      сводку по дням. Полоса рисуется от дня заезда до дня перед выездом:
      день выезда уже свободен. */
   const { bars, busyHouses, guestsPerDay } = useMemo(() => {
-    const bars = new Map<string, { id: string; start: number; span: number; booking: Booking }[]>();
+    const bars = new Map<string, Bar[]>();
     const busyHouses = new Map<number, Set<string>>();
     const guestsPerDay = new Map<number, number>();
 
@@ -112,34 +211,44 @@ export function Occupancy({
 
   const todayDay = today.slice(0, 7) === firstIso.slice(0, 7) ? Number(today.slice(8, 10)) : null;
   const columns = `132px repeat(${total}, minmax(0, 1fr))`;
+  const houseById = useMemo(
+    () => new Map(houses.map((house) => [house.id, house.title])),
+    [houses],
+  );
 
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={() => setOffset((v) => v - 1)}
-          className="border-line-2 text-ink-2 hover:border-ink-3 hover:text-ink cursor-pointer rounded-full border px-3.5 py-1.5 text-[13px]"
-        >
-          ← Раньше
-        </button>
-        <b className="min-w-44 text-center text-[16px] font-bold">
-          {MONTHS[view.month]} {view.year}
-        </b>
-        <button
-          type="button"
-          onClick={() => setOffset((v) => v + 1)}
-          className="border-line-2 text-ink-2 hover:border-ink-3 hover:text-ink cursor-pointer rounded-full border px-3.5 py-1.5 text-[13px]"
-        >
-          Позже →
-        </button>
+        {/* Стрелки и месяц — одна группа фиксированной ширины, иначе название
+            месяца прыгает по строке вслед за длиной кнопок. */}
+        <div className="border-line-2 flex items-center gap-1 rounded-full border p-1">
+          <button
+            type="button"
+            aria-label="Предыдущий месяц"
+            onClick={() => setOffset((v) => v - 1)}
+            className="text-ink-2 hover:bg-bg-4 hover:text-ink cursor-pointer rounded-full px-3 py-1.5 text-[15px] leading-none"
+          >
+            ←
+          </button>
+          <b className="w-[150px] text-center text-[15px] font-bold tabular-nums">
+            {MONTHS[view.month]} {view.year}
+          </b>
+          <button
+            type="button"
+            aria-label="Следующий месяц"
+            onClick={() => setOffset((v) => v + 1)}
+            className="text-ink-2 hover:bg-bg-4 hover:text-ink cursor-pointer rounded-full px-3 py-1.5 text-[15px] leading-none"
+          >
+            →
+          </button>
+        </div>
         {offset !== 0 ? (
           <button
             type="button"
             onClick={() => setOffset(0)}
-            className="text-ink-3 hover:text-ink cursor-pointer text-[13px]"
+            className="text-aurora cursor-pointer text-[13px] font-semibold"
           >
-            Сегодня
+            К текущему месяцу
           </button>
         ) : null}
 
@@ -148,10 +257,10 @@ export function Occupancy({
             <span className="bg-ok/25 border-ok/40 size-3 rounded-[3px] border" /> свободно
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="bg-busy size-3 rounded-[3px]" /> подтверждена
+            <span className="bg-busy size-3 rounded-[3px]" /> занято
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="bg-amber size-3 rounded-[3px]" /> придержана
+            <span className="bg-amber size-3 rounded-[3px]" /> ждёт подтверждения
           </span>
         </span>
       </div>
@@ -183,17 +292,22 @@ export function Occupancy({
             })}
           </div>
 
-          {/* Строка на домик */}
+          {/* Строка на домик. Всё — и подложка, и полосы — жёстко в первой
+              строке грида: иначе занятые колонки выталкивают подложку вниз,
+              и каждый домик рисуется в два этажа. */}
           <div className="grid gap-1.5">
             {houses.map((house) => {
               const list = bars.get(house.id) ?? [];
               return (
                 <div
                   key={house.id}
-                  className="relative grid items-center gap-px"
+                  className="grid items-center gap-px"
                   style={{ gridTemplateColumns: columns }}
                 >
-                  <span className="text-ink truncate pr-3 text-[13px] font-semibold">
+                  <span
+                    className="text-ink truncate pr-3 text-[13px] font-semibold"
+                    style={{ gridRow: 1, gridColumn: 1 }}
+                  >
                     {house.title}
                   </span>
 
@@ -204,6 +318,7 @@ export function Occupancy({
                     return (
                       <span
                         key={day}
+                        style={{ gridRow: 1, gridColumn: day + 1 }}
                         className={`h-9 rounded-[4px] ${weekend ? 'bg-ok/15' : 'bg-ok/8'} ${
                           todayDay === day ? 'ring-aurora/50 ring-1 ring-inset' : ''
                         }`}
@@ -213,18 +328,29 @@ export function Occupancy({
 
                   {/* Полосы броней поверх подложки */}
                   {list.map((bar) => (
-                    <span
+                    <button
                       key={bar.id}
-                      title={`${bar.booking.dateFrom} — ${bar.booking.dateTo}${
-                        bar.booking.guests ? ` · ${bar.booking.guests} чел.` : ''
-                      }${bar.booking.note ? ` · ${bar.booking.note}` : ''}`}
+                      type="button"
+                      onClick={() => onSelect?.(bar.id)}
+                      onMouseEnter={(event) =>
+                        setHint({ rect: event.currentTarget.getBoundingClientRect(), bar })
+                      }
+                      onMouseLeave={() => setHint((v) => (v?.bar.id === bar.id ? null : v))}
+                      onFocus={(event) =>
+                        setHint({ rect: event.currentTarget.getBoundingClientRect(), bar })
+                      }
+                      onBlur={() => setHint((v) => (v?.bar.id === bar.id ? null : v))}
                       style={{ gridColumn: `${bar.start + 1} / span ${bar.span}`, gridRow: 1 }}
-                      className={`z-10 flex h-9 items-center overflow-hidden rounded-[5px] px-2 text-[11.5px] font-semibold whitespace-nowrap ${
+                      className={`z-10 flex h-9 cursor-pointer items-center overflow-hidden rounded-[5px] px-2 text-[11.5px] font-semibold whitespace-nowrap transition ${
                         bar.booking.status === 'confirmed' ? 'bg-busy text-bg' : 'bg-amber text-bg'
+                      } ${
+                        selectedId === bar.id
+                          ? 'ring-aurora ring-2 ring-offset-2 ring-offset-[var(--color-bg-3)]'
+                          : 'hover:brightness-110'
                       }`}
                     >
                       <span className="truncate">{bar.booking.note || 'занято'}</span>
-                    </span>
+                    </button>
                   ))}
                 </div>
               );
@@ -277,11 +403,7 @@ export function Occupancy({
                           : `${guests} чел.`
                       }
                       className={`flex h-6 items-center justify-center rounded-[4px] text-[11px] font-semibold ${
-                        guests === 0
-                          ? 'text-ink-3'
-                          : over
-                            ? 'bg-busy text-bg'
-                            : 'bg-ice/20 text-ice'
+                        guests === 0 ? 'text-ink-3' : over ? 'bg-busy text-bg' : 'bg-ice/20 text-ice'
                       }`}
                     >
                       {guests || '·'}
@@ -297,6 +419,14 @@ export function Occupancy({
           )}
         </div>
       </div>
+
+      {hint ? (
+        <Hint
+          rect={hint.rect}
+          booking={hint.bar.booking}
+          house={houseById.get(hint.bar.booking.houseId) ?? 'домик удалён'}
+        />
+      ) : null}
     </div>
   );
 }

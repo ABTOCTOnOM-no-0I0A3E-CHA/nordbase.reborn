@@ -13,6 +13,22 @@ function formatDate(value: string): string {
   return `${day}.${month}.${year}`;
 }
 
+/* Статус — отдельный цветной ярлык, а не слово вплотную к имени: иначе
+   строка читается как «Ольга Новая», будто это фамилия гостя. */
+const REQUEST_LABEL: Record<string, string> = {
+  new: 'ждёт ответа',
+  in_work: 'в работе',
+  confirmed: 'подтверждена',
+  cancelled: 'отменена',
+};
+
+const REQUEST_STYLE: Record<string, string> = {
+  new: 'bg-ice text-bg uppercase tracking-[0.06em]',
+  in_work: 'bg-amber text-bg',
+  confirmed: 'bg-ok text-bg',
+  cancelled: 'border-line-2 text-ink-3 border',
+};
+
 /* Быстрые переходы: владелец заходит в админку с конкретным намерением —
    «поменять цену», «добавить фото». Пусть это будет в один клик с главной,
    а не поиском по списку разделов. */
@@ -52,6 +68,8 @@ export default async function Dashboard() {
         id: bookings.id,
         dateFrom: bookings.dateFrom,
         dateTo: bookings.dateTo,
+        guests: bookings.guests,
+        status: bookings.status,
         note: bookings.note,
         houseTitle: houses.title,
       })
@@ -129,21 +147,34 @@ export default async function Dashboard() {
               Заявок пока нет. Они появятся здесь сразу после отправки формы на сайте.
             </p>
           ) : (
-            <ul className="grid gap-2.5">
-              {latest.map((row) => (
-                <li
-                  key={row.id}
-                  className="border-line flex items-center gap-3 border-b pb-2.5 last:border-b-0 last:pb-0"
-                >
-                  <b className="text-[14px]">{row.name}</b>
-                  <a href={`tel:${row.phone}`} className="text-ice text-[13px]">
-                    {row.phone}
-                  </a>
-                  <span className="text-ink-3 ml-auto text-[12px]">
-                    {row.createdAt.toLocaleDateString('ru-RU')}
-                  </span>
-                </li>
-              ))}
+            <ul className="grid gap-2">
+              {latest.map((row) => {
+                const isNew = row.status === 'new';
+                return (
+                  <li
+                    key={row.id}
+                    className={`flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-[12px] border px-3.5 py-2.5 ${
+                      isNew ? 'border-ice bg-ice/15' : 'border-line bg-bg-2'
+                    }`}
+                  >
+                    {isNew ? <span className="bg-ice size-2 flex-none rounded-full" /> : null}
+                    <b className={isNew ? 'text-[15px]' : 'text-[14px]'}>{row.name}</b>
+                    <a href={`tel:${row.phone}`} className="text-ice text-[13px]">
+                      {row.phone}
+                    </a>
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                        REQUEST_STYLE[row.status] ?? ''
+                      }`}
+                    >
+                      {REQUEST_LABEL[row.status]}
+                    </span>
+                    <span className="text-ink-3 ml-auto text-[12px] tabular-nums">
+                      {row.createdAt.toLocaleDateString('ru-RU')}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </Panel>
@@ -154,17 +185,30 @@ export default async function Dashboard() {
               Занятых дат нет. Отмечайте брони, и гости увидят на сайте, какие даты свободны.
             </p>
           ) : (
-            <ul className="grid gap-2.5">
+            <ul className="grid gap-2">
               {upcoming.map((row) => (
                 <li
                   key={row.id}
-                  className="border-line flex flex-wrap items-center gap-2 border-b pb-2.5 last:border-b-0 last:pb-0"
+                  className="border-line bg-bg-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-[12px] border px-3.5 py-2.5"
                 >
+                  <span
+                    className={`size-2 flex-none rounded-full ${
+                      row.status === 'confirmed' ? 'bg-busy' : 'bg-amber'
+                    }`}
+                  />
                   <b className="text-[14px]">{row.houseTitle}</b>
-                  <span className="text-ink-2 text-[13px]">
+                  <span className="text-ink-2 text-[13px] tabular-nums">
                     {formatDate(row.dateFrom)} — {formatDate(row.dateTo)}
                   </span>
+                  {row.guests ? (
+                    <span className="text-ink-3 text-[12.5px]">{row.guests} чел.</span>
+                  ) : null}
                   {row.note ? <span className="text-ink-3 text-[12.5px]">{row.note}</span> : null}
+                  {row.status === 'hold' ? (
+                    <span className="bg-amber text-bg ml-auto rounded-full px-2.5 py-1 text-[11px] font-semibold">
+                      ждёт подтверждения
+                    </span>
+                  ) : null}
                 </li>
               ))}
             </ul>

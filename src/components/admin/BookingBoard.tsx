@@ -64,16 +64,52 @@ export function BookingBoard({
         />
       </div>
 
-      <div ref={formRef}>
-        <Panel
-          className="mb-6"
-          title={selected ? 'Изменить бронь' : 'Отметить занятые даты'}
-          description={
-            selected
-              ? 'Правите бронь, выбранную в календаре. Чтобы завести новую — нажмите «Отменить правку».'
-              : 'Подтвердили заезд по телефону — впишите даты здесь, и они пропадут из свободных на сайте.'
-          }
-        >
+      {/* Правка и заведение новой брони — одна форма, поэтому режим видно по
+          самой панели: цвет рамки, шапка с датами выбранной брони и импульс
+          при переключении. Иначе меняется только содержимое полей ниже
+          календаря, и понять, что происходит, невозможно. */}
+      <section
+        ref={formRef}
+        key={selected?.id ?? 'new'}
+        className={`mb-6 rounded-[16px] border ${
+          selected
+            ? 'border-aurora bg-aurora/8 edit-flash'
+            : 'border-line bg-bg-3'
+        }`}
+      >
+        {selected ? (
+          <header className="border-aurora/30 flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-5 py-4">
+            <span className="bg-aurora text-aurora-ink rounded-full px-2.5 py-1 text-[11px] font-bold tracking-[0.06em] uppercase">
+              Правка
+            </span>
+            <h2 className="text-[15px] font-bold">
+              {houseById.get(selected.houseId) ?? 'домик удалён'} ·{' '}
+              <span className="tabular-nums">
+                {formatDate(selected.dateFrom)} — {formatDate(selected.dateTo)}
+              </span>
+            </h2>
+            {selected.note ? (
+              <span className="text-ink-2 text-[13px]">{selected.note}</span>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => setSelectedId(null)}
+              className="border-line-2 text-ink-2 hover:border-ink-3 hover:text-ink ml-auto cursor-pointer rounded-full border px-3.5 py-1.5 text-[12.5px] font-semibold transition"
+            >
+              Отменить правку
+            </button>
+          </header>
+        ) : (
+          <header className="border-line border-b px-5 py-4">
+            <h2 className="text-[15px] font-bold">Отметить занятые даты</h2>
+            <p className="text-ink-3 mt-1 text-[13px] leading-[1.45]">
+              Подтвердили заезд по телефону — впишите даты здесь, и они пропадут из свободных на
+              сайте.
+            </p>
+          </header>
+        )}
+
+        <div className="p-5">
           <BookingForm
             /* Ключ перемонтирует форму: поля неуправляемые, иначе при выборе
                другой брони в них останутся прежние значения. */
@@ -94,8 +130,8 @@ export function BookingBoard({
             }
             onDone={() => setSelectedId(null)}
           />
-        </Panel>
-      </div>
+        </div>
+      </section>
 
       <Panel title="Все брони" description="Ближайшие сверху. Нажмите «Изменить» или полосу в календаре.">
         {visible.length === 0 ? (
@@ -132,13 +168,19 @@ export function BookingBoard({
                     {STATUS_LABEL[booking.status]}
                   </span>
 
-                  <button
-                    type="button"
-                    onClick={() => pick(booking.id)}
-                    className="border-line-2 text-ink-2 hover:border-ink-3 hover:text-ink ml-auto cursor-pointer rounded-full border px-3.5 py-1.5 text-[12.5px] font-semibold transition"
-                  >
-                    Изменить
-                  </button>
+                  {active ? (
+                    <span className="bg-aurora text-aurora-ink ml-auto rounded-full px-2.5 py-1 text-[11px] font-bold tracking-[0.06em] uppercase">
+                      Правится
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => pick(booking.id)}
+                      className="border-line-2 text-ink-2 hover:border-ink-3 hover:text-ink ml-auto cursor-pointer rounded-full border px-3.5 py-1.5 text-[12.5px] font-semibold transition"
+                    >
+                      Изменить
+                    </button>
+                  )}
 
                   <ActionForm
                     action={deleteBooking}

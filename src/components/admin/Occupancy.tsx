@@ -346,7 +346,9 @@ export function Occupancy({
                       } ${
                         selectedId === bar.id
                           ? 'ring-aurora ring-2 ring-offset-2 ring-offset-[var(--color-bg-3)]'
-                          : 'hover:brightness-110'
+                          : /* Пока правится одна бронь, остальные приглушены:
+                               видно, какая полоса лежит в форме ниже. */
+                            `hover:brightness-110 ${selectedId ? 'opacity-40' : ''}`
                       }`}
                     >
                       <span className="truncate">{bar.booking.note || 'занято'}</span>

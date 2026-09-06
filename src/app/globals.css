@@ -288,8 +288,26 @@ body {
   }
 }
 
+/* ---------- переход в режим правки ----------
+   Форма стоит ниже календаря, и при клике по брони меняется только её
+   содержимое — этого не видно. Один импульс по краю панели показывает, что
+   форма переключилась именно сейчас и именно на выбранную бронь. */
+@keyframes edit-flash {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-aurora) 55%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 16px color-mix(in oklab, var(--color-aurora) 0%, transparent);
+  }
+}
+
+.edit-flash {
+  animation: edit-flash 900ms ease-out;
+}
+
 /* Гостю, который просил меньше движения, показываем всё сразу. */
 @media (prefers-reduced-motion: reduce) {
+  .edit-flash,
   .request-sending,
   .request-done,
   .request-done-glow,

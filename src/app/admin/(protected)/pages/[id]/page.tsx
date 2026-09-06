@@ -47,15 +47,11 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
   const saveBlocks = savePageBlocks.bind(null, page.id);
 
   return (
-    <div className="max-w-5xl">
+    <div>
       <AdminHeading
         title={page.title}
         description={`Адрес на сайте: /${page.slug}`}
-        action={
-          <Link href="/admin/pages" className="text-ink-2 hover:text-ink text-[13.5px]">
-            ← Все страницы
-          </Link>
-        }
+        back={{ href: '/admin/pages', label: 'Все страницы' }}
       />
 
       <Panel className="mb-6">

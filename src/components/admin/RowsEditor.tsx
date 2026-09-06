@@ -1,10 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import { ConfirmSubmit, Input, Submit, Textarea, inputClass } from './ui';
+import { Icon, type IconName } from './icons';
 
 /* Один редактор на три плоских справочника: цены, вопросы, отзывы.
-   Каждая строка — отдельная форма, поэтому всё работает без клиентского
-   состояния и переживает перезагрузку страницы на середине правки. */
+   Строки свёрнуты и показывают своё содержимое — так список читается как
+   список, а не как десять одинаковых форм подряд. Разворачивается по клику,
+   каждая строка при этом остаётся отдельной формой и сохраняется отдельно. */
 
 export type Column = {
   name: string;
@@ -16,14 +19,21 @@ export type Column = {
   options?: { value: string; label: string }[];
 };
 
-export type Row = { id: string; values: Record<string, string | number | boolean | null> };
+export type Row = {
+  id: string;
+  values: Record<string, string | number | boolean | null>;
+  /* Что показать в свёрнутом виде: заголовок и пояснение помельче. */
+  title: string;
+  note?: string;
+  hidden?: boolean;
+};
 
 type Action = (formData: FormData) => Promise<void>;
 
 function Cell({ column, value }: { column: Column; value: string | number | boolean | null }) {
   if (column.type === 'checkbox') {
     return (
-      <label className="text-ink-2 flex items-center gap-2 text-[13px] whitespace-nowrap">
+      <label className="text-ink-2 flex cursor-pointer items-center gap-2.5 text-[13.5px]">
         <input
           type="checkbox"
           name={column.name}
@@ -55,7 +65,7 @@ function Cell({ column, value }: { column: Column; value: string | number | bool
     return (
       <Textarea
         name={column.name}
-        rows={2}
+        rows={3}
         placeholder={column.placeholder ?? column.label}
         defaultValue={value == null ? '' : String(value)}
       />
@@ -72,6 +82,27 @@ function Cell({ column, value }: { column: Column; value: string | number | bool
   );
 }
 
+function Fields({
+  columns,
+  values,
+}: {
+  columns: Column[];
+  values: Record<string, string | number | boolean | null>;
+}) {
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      {columns.map((column) => (
+        <div key={column.name} className={column.className ?? ''}>
+          {column.type !== 'checkbox' ? (
+            <span className="text-ink mb-1.5 block text-[13px] font-semibold">{column.label}</span>
+          ) : null}
+          <Cell column={column} value={values[column.name] ?? null} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function RowsEditor({
   rows,
   columns,
@@ -79,6 +110,8 @@ export function RowsEditor({
   remove,
   move,
   addLabel = 'Добавить',
+  icon = 'text',
+  emptyText,
 }: {
   rows: Row[];
   columns: Column[];
@@ -86,88 +119,146 @@ export function RowsEditor({
   remove: Action;
   move: Action;
   addLabel?: string;
+  icon?: IconName;
+  emptyText?: string;
 }) {
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+
+  /* Пустые значения для формы добавления: галочка «показывать» включена. */
+  const blank: Record<string, string | number | boolean | null> = {};
+  for (const column of columns) blank[column.name] = column.type === 'checkbox' ? true : null;
+
   return (
-    <div className="grid gap-3">
-      {rows.map((row, index) => (
-        <div key={row.id} className="bg-bg-3 border-line rounded-[14px] border p-4">
-          <form action={save} className="grid gap-3">
-            <input type="hidden" name="id" value={row.id} />
-            <div className="grid gap-3 md:grid-cols-2">
-              {columns.map((column) => (
-                <div key={column.name} className={column.className ?? ''}>
-                  {column.type !== 'checkbox' ? (
-                    <span className="text-ink-3 mb-1.5 block text-[12px] font-semibold">
-                      {column.label}
-                    </span>
-                  ) : null}
-                  <Cell column={column} value={row.values[column.name] ?? null} />
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center gap-2">
-              <Submit>Сохранить</Submit>
-            </div>
-          </form>
-
-          <div className="border-line mt-3 flex items-center gap-2 border-t pt-3">
-            <form action={move}>
-              <input type="hidden" name="id" value={row.id} />
-              <input type="hidden" name="direction" value="up" />
-              <button
-                type="submit"
-                disabled={index === 0}
-                aria-label="Выше"
-                className="border-line-2 text-ink-2 hover:text-ink cursor-pointer rounded-full border px-3 py-1.5 text-[12.5px] disabled:opacity-30"
-              >
-                ↑
-              </button>
-            </form>
-            <form action={move}>
-              <input type="hidden" name="id" value={row.id} />
-              <input type="hidden" name="direction" value="down" />
-              <button
-                type="submit"
-                disabled={index === rows.length - 1}
-                aria-label="Ниже"
-                className="border-line-2 text-ink-2 hover:text-ink cursor-pointer rounded-full border px-3 py-1.5 text-[12.5px] disabled:opacity-30"
-              >
-                ↓
-              </button>
-            </form>
-            <form action={remove} className="ml-auto">
-              <input type="hidden" name="id" value={row.id} />
-              <ConfirmSubmit message="Удалить запись? Это действие нельзя отменить.">
-                Удалить
-              </ConfirmSubmit>
-            </form>
-          </div>
-        </div>
-      ))}
-
-      <form action={save} className="border-line-2 grid gap-3 rounded-[14px] border border-dashed p-4">
-        <p className="text-ink-3 text-[12px] font-semibold tracking-[0.08em] uppercase">
-          {addLabel}
+    <div className="grid gap-2.5">
+      {rows.length === 0 && !adding && emptyText ? (
+        <p className="text-ink-3 border-line-2 rounded-[14px] border border-dashed px-5 py-8 text-center text-[13.5px]">
+          {emptyText}
         </p>
-        <div className="grid gap-3 md:grid-cols-2">
-          {columns.map((column) => (
-            <div key={column.name} className={column.className ?? ''}>
-              {column.type !== 'checkbox' ? (
-                <span className="text-ink-3 mb-1.5 block text-[12px] font-semibold">
-                  {column.label}
+      ) : null}
+
+      {rows.map((row, index) => {
+        const open = openId === row.id;
+
+        return (
+          <div
+            key={row.id}
+            className={`bg-bg-3 overflow-hidden rounded-[14px] border transition ${
+              open ? 'border-aurora/40' : 'border-line'
+            }`}
+          >
+            <div className="flex items-center gap-3 px-4 py-3">
+              <button
+                type="button"
+                onClick={() => setOpenId(open ? null : row.id)}
+                className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left"
+              >
+                <span
+                  className={`flex size-9 flex-none items-center justify-center rounded-[10px] ${
+                    open ? 'bg-aurora/15 text-aurora' : 'bg-bg-2 text-ink-3'
+                  }`}
+                >
+                  <Icon name={icon} className="size-[18px]" />
+                </span>
+                <span className="min-w-0">
+                  <b
+                    className={`block truncate text-[14.5px] font-semibold ${
+                      row.hidden ? 'text-ink-3' : ''
+                    }`}
+                  >
+                    {row.title || 'Без названия'}
+                  </b>
+                  {row.note ? (
+                    <span className="text-ink-3 block truncate text-[12.5px]">{row.note}</span>
+                  ) : null}
+                </span>
+              </button>
+
+              {row.hidden ? (
+                <span className="text-ink-3 bg-bg-2 flex-none rounded-full px-2.5 py-1 text-[11px] font-semibold">
+                  скрыто
                 </span>
               ) : null}
-              <Cell
-                column={column}
-                value={column.type === 'checkbox' ? true : null}
-              />
+
+              <span className="flex flex-none items-center gap-1">
+                <form action={move}>
+                  <input type="hidden" name="id" value={row.id} />
+                  <input type="hidden" name="direction" value="up" />
+                  <button
+                    type="submit"
+                    disabled={index === 0}
+                    aria-label="Выше"
+                    title="Выше"
+                    className="text-ink-3 hover:bg-bg-2 hover:text-ink cursor-pointer rounded-[8px] px-2 py-1.5 disabled:opacity-25"
+                  >
+                    ↑
+                  </button>
+                </form>
+                <form action={move}>
+                  <input type="hidden" name="id" value={row.id} />
+                  <input type="hidden" name="direction" value="down" />
+                  <button
+                    type="submit"
+                    disabled={index === rows.length - 1}
+                    aria-label="Ниже"
+                    title="Ниже"
+                    className="text-ink-3 hover:bg-bg-2 hover:text-ink cursor-pointer rounded-[8px] px-2 py-1.5 disabled:opacity-25"
+                  >
+                    ↓
+                  </button>
+                </form>
+              </span>
             </div>
-          ))}
-        </div>
-        <div>
-          <Submit>{addLabel}</Submit>
-        </div>
-      </form>
+
+            {open ? (
+              <div className="border-line border-t px-4 py-5">
+                <form action={save} className="grid gap-4">
+                  <input type="hidden" name="id" value={row.id} />
+                  <Fields columns={columns} values={row.values} />
+                  <div>
+                    <Submit>Сохранить</Submit>
+                  </div>
+                </form>
+                {/* Отдельная форма: вложенные формы браузер не разрешает. */}
+                <form action={remove} className="border-line mt-4 border-t pt-4">
+                  <input type="hidden" name="id" value={row.id} />
+                  <ConfirmSubmit message="Удалить запись? Это действие нельзя отменить.">
+                    Удалить
+                  </ConfirmSubmit>
+                </form>
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
+
+      {adding ? (
+        <form action={save} className="border-aurora/40 bg-bg-3 grid gap-4 rounded-[14px] border p-4">
+          <div className="flex items-center justify-between">
+            <b className="text-[14.5px] font-semibold">{addLabel}</b>
+            <button
+              type="button"
+              onClick={() => setAdding(false)}
+              className="text-ink-3 hover:text-ink cursor-pointer text-[13px]"
+            >
+              Отмена
+            </button>
+          </div>
+          <Fields columns={columns} values={blank} />
+          <div>
+            <Submit>{addLabel}</Submit>
+          </div>
+        </form>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="border-line-2 text-ink-2 hover:border-aurora/50 hover:text-ink flex cursor-pointer items-center justify-center gap-2 rounded-[14px] border border-dashed py-3.5 text-[14px] font-semibold transition"
+        >
+          <Icon name="plus" className="size-[18px]" />
+          {addLabel}
+        </button>
+      )}
     </div>
   );
 }

@@ -8,8 +8,8 @@ import { deleteFaq, moveFaq, saveFaq } from '@/lib/admin/catalog-actions';
 export const metadata = { title: 'Вопросы' };
 
 const columns: Column[] = [
-  { name: 'question', label: 'Вопрос', className: 'md:col-span-2' },
-  { name: 'answer', label: 'Ответ', type: 'textarea', className: 'md:col-span-2' },
+  { name: 'question', label: 'Вопрос гостя', className: 'md:col-span-2' },
+  { name: 'answer', label: 'Ваш ответ', type: 'textarea', className: 'md:col-span-2' },
   { name: 'visible', label: 'Показывать на сайте', type: 'checkbox' },
 ];
 
@@ -17,14 +17,18 @@ export default async function FaqPage() {
   const rows = await db.select().from(faq).orderBy(asc(faq.sort));
 
   return (
-    <div className="max-w-4xl">
+    <div>
       <AdminHeading
         title="Вопросы и ответы"
-        description="Попадают в блок «Вопросы» на всех страницах, где он добавлен."
+        description="Чем больше ответов здесь, тем меньше одинаковых звонков. Появляются на всех страницах, где добавлен блок «Вопросы»."
       />
       <RowsEditor
+        icon="faq"
         rows={rows.map((row) => ({
           id: row.id,
+          title: row.question,
+          note: row.answer.slice(0, 90),
+          hidden: !row.visible,
           values: { question: row.question, answer: row.answer, visible: row.visible },
         }))}
         columns={columns}
@@ -32,6 +36,7 @@ export default async function FaqPage() {
         remove={deleteFaq}
         move={moveFaq}
         addLabel="Добавить вопрос"
+        emptyText="Вопросов пока нет. Вспомните, что чаще всего спрашивают по телефону, — и запишите сюда."
       />
     </div>
   );

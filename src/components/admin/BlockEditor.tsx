@@ -8,9 +8,16 @@ import {
   type Block,
   type BlockType,
 } from '@/lib/blocks';
-import { BLOCK_FIELDS, BLOCK_HINTS, type FieldDef } from '@/lib/admin/block-fields';
+import {
+  BLOCK_ABOUT,
+  BLOCK_FIELDS,
+  BLOCK_HINTS,
+  BLOCK_ICONS,
+  type FieldDef,
+} from '@/lib/admin/block-fields';
+import { Icon } from './icons';
 import { MediaMultiPicker, MediaPicker, type MediaOption } from './MediaPicker';
-import { Input, Select, Textarea, inputClass } from './ui';
+import { Input, Select, Textarea } from './ui';
 
 /* Редактор держит массив блоков в состоянии и отправляет его одной кнопкой.
    Так владелец может двигать блоки и править несколько сразу, не теряя правки
@@ -222,6 +229,19 @@ function ListField({
   );
 }
 
+/* Короткая выжимка содержимого — чтобы в свёрнутом виде было понятно, какой
+   именно блок перед тобой, а не просто «Текст», «Текст», «Текст». */
+function summarise(block: Block): string {
+  if ('title' in block && block.title) return block.title;
+  if (block.type === 'text' && block.body) return block.body.slice(0, 70);
+  if (block.type === 'textMedia' && block.body) return block.body.slice(0, 70);
+  if (block.type === 'gallery') return `${block.mediaIds.length} фото`;
+  if (block.type === 'cards') return `${block.items.length} плиток`;
+  if (block.type === 'facts') return `${block.items.length} цифр`;
+  if (block.type === 'hero' && block.lead) return block.lead.slice(0, 70);
+  return BLOCK_ABOUT[block.type].slice(0, 70);
+}
+
 export function BlockEditor({
   initial,
   media,
@@ -234,8 +254,10 @@ export function BlockEditor({
   previewHref?: string;
 }) {
   const [blocks, setBlocks] = useState<Block[]>(initial);
-  const [adding, setAdding] = useState<BlockType>('text');
-  const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
+  /* Открыт максимум один блок за раз. Раскрытые разом пятнадцать блоков —
+     это стена полей, в которой невозможно найти нужное. */
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [picking, setPicking] = useState(false);
   const [pending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -243,7 +265,7 @@ export function BlockEditor({
   const update = (index: number, block: Block) =>
     setBlocks((prev) => prev.map((b, i) => (i === index ? block : b)));
 
-  const swap = (a: number, b: number) =>
+  const swap = (a: number, b: number) => {
     setBlocks((prev) => {
       const copy = [...prev];
       const first = copy[a];
@@ -253,121 +275,166 @@ export function BlockEditor({
       copy[b] = first;
       return copy;
     });
-
-  const toggle = (index: number) =>
-    setCollapsed((prev) => {
-      const next = new Set(prev);
-      if (next.has(index)) next.delete(index);
-      else next.add(index);
-      return next;
-    });
+    /* Открытый блок переезжает вместе со своим содержимым. */
+    setOpenIndex((current) => (current === a ? b : current === b ? a : current));
+  };
 
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-3">
       {blocks.map((block, index) => {
+        const open = openIndex === index;
         const fields = BLOCK_FIELDS[block.type];
         const hint = BLOCK_HINTS[block.type];
-        const isCollapsed = collapsed.has(index);
 
         return (
-          <div key={index} className="bg-bg-3 border-line rounded-[14px] border">
-            <div className="border-line flex flex-wrap items-center gap-3 border-b px-4 py-3">
+          <div
+            key={index}
+            className={`bg-bg-3 overflow-hidden rounded-[14px] border transition ${
+              open ? 'border-aurora/40' : 'border-line'
+            }`}
+          >
+            <div className="flex items-center gap-3 px-4 py-3">
               <button
                 type="button"
-                onClick={() => toggle(index)}
-                className="text-ink-3 hover:text-ink cursor-pointer"
-                aria-label={isCollapsed ? 'Развернуть' : 'Свернуть'}
+                onClick={() => setOpenIndex(open ? null : index)}
+                className="flex flex-1 cursor-pointer items-center gap-3 text-left"
               >
-                {isCollapsed ? '▸' : '▾'}
+                <span
+                  className={`flex size-9 flex-none items-center justify-center rounded-[10px] ${
+                    open ? 'bg-aurora/15 text-aurora' : 'bg-bg-2 text-ink-3'
+                  }`}
+                >
+                  <Icon name={BLOCK_ICONS[block.type]} className="size-[18px]" />
+                </span>
+                <span className="min-w-0">
+                  <b className="block text-[14.5px] font-semibold">{BLOCK_LABELS[block.type]}</b>
+                  <span className="text-ink-3 block truncate text-[12.5px]">
+                    {summarise(block)}
+                  </span>
+                </span>
               </button>
-              <b className="text-[14.5px] font-semibold">{BLOCK_LABELS[block.type]}</b>
-              {hint ? <span className="text-ink-3 text-[12px]">{hint}</span> : null}
 
-              <span className="ml-auto flex items-center gap-1">
+              <span className="flex flex-none items-center gap-1">
                 <button
                   type="button"
-                  aria-label="Выше"
+                  aria-label="Переместить выше"
+                  title="Переместить выше"
                   disabled={index === 0}
                   onClick={() => swap(index, index - 1)}
-                  className="border-line-2 text-ink-2 hover:text-ink cursor-pointer rounded-full border px-2.5 py-1 text-[12px] disabled:opacity-30"
+                  className="text-ink-3 hover:bg-bg-2 hover:text-ink cursor-pointer rounded-[8px] px-2 py-1.5 disabled:opacity-25"
                 >
                   ↑
                 </button>
                 <button
                   type="button"
-                  aria-label="Ниже"
+                  aria-label="Переместить ниже"
+                  title="Переместить ниже"
                   disabled={index === blocks.length - 1}
                   onClick={() => swap(index, index + 1)}
-                  className="border-line-2 text-ink-2 hover:text-ink cursor-pointer rounded-full border px-2.5 py-1 text-[12px] disabled:opacity-30"
+                  className="text-ink-3 hover:bg-bg-2 hover:text-ink cursor-pointer rounded-[8px] px-2 py-1.5 disabled:opacity-25"
                 >
                   ↓
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    if (window.confirm('Удалить блок со страницы?')) {
-                      setBlocks((prev) => prev.filter((_, i) => i !== index));
-                    }
+                    if (!window.confirm('Убрать блок со страницы?')) return;
+                    setBlocks((prev) => prev.filter((_, i) => i !== index));
+                    setOpenIndex(null);
                   }}
-                  className="border-busy/50 text-busy hover:bg-busy/10 cursor-pointer rounded-full border px-2.5 py-1 text-[12px]"
+                  className="text-ink-3 hover:bg-busy/10 hover:text-busy cursor-pointer rounded-[8px] px-2.5 py-1.5 text-[12.5px]"
                 >
-                  Удалить
+                  Убрать
                 </button>
               </span>
             </div>
 
-            {isCollapsed ? null : (
-              <div className="grid gap-4 p-4 sm:grid-cols-2">
-                {fields.map((field) => {
-                  const wide =
-                    field.kind === 'list' ||
-                    field.kind === 'mediaList' ||
-                    field.kind === 'textarea' ||
-                    ('wide' in field && field.wide);
-                  return (
-                    <div key={field.name} className={wide ? 'sm:col-span-2' : ''}>
-                      {field.kind !== 'checkbox' ? (
-                        <Label hint={field.kind === 'textarea' ? field.hint : undefined}>
-                          {field.label}
-                        </Label>
-                      ) : null}
-                      <FieldControl
-                        field={field}
-                        value={(block as unknown as Item)[field.name]}
-                        media={media}
-                        onChange={(next) => update(index, setPath(block, field.name, next))}
-                      />
-                    </div>
-                  );
-                })}
+            {open ? (
+              <div className="border-line border-t px-4 py-5">
+                {hint ? (
+                  <p className="text-ink-3 bg-bg-2 mb-4 rounded-[10px] px-3.5 py-2.5 text-[12.5px]">
+                    {hint}. Менять его здесь не нужно — блок покажет то, что там заведено.
+                  </p>
+                ) : null}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {fields.map((field) => {
+                    const wide =
+                      field.kind === 'list' ||
+                      field.kind === 'mediaList' ||
+                      field.kind === 'textarea' ||
+                      ('wide' in field && field.wide);
+                    return (
+                      <div key={field.name} className={wide ? 'sm:col-span-2' : ''}>
+                        {field.kind !== 'checkbox' ? (
+                          <Label hint={field.kind === 'textarea' ? field.hint : undefined}>
+                            {field.label}
+                          </Label>
+                        ) : null}
+                        <FieldControl
+                          field={field}
+                          value={(block as unknown as Item)[field.name]}
+                          media={media}
+                          onChange={(next) => update(index, setPath(block, field.name, next))}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            )}
+            ) : null}
           </div>
         );
       })}
 
-      <div className="border-line-2 flex flex-wrap items-center gap-3 rounded-[14px] border border-dashed p-4">
-        <select
-          value={adding}
-          onChange={(e) => setAdding(e.target.value as BlockType)}
-          className={`${inputClass} select max-w-56`}
-        >
-          {BLOCK_ORDER.map((type) => (
-            <option key={type} value={type}>
-              {BLOCK_LABELS[type]}
-            </option>
-          ))}
-        </select>
+      {picking ? (
+        <div className="border-line bg-bg-3 rounded-[14px] border p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <b className="text-[14.5px] font-semibold">Что добавить на страницу</b>
+            <button
+              type="button"
+              onClick={() => setPicking(false)}
+              className="text-ink-3 hover:text-ink cursor-pointer text-[13px]"
+            >
+              Отмена
+            </button>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {BLOCK_ORDER.map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => {
+                  setBlocks((prev) => [...prev, emptyBlock(type)]);
+                  setOpenIndex(blocks.length);
+                  setPicking(false);
+                }}
+                className="border-line hover:border-aurora/50 hover:bg-bg-2 flex cursor-pointer items-start gap-3 rounded-[12px] border p-3 text-left transition"
+              >
+                <span className="bg-bg-2 text-ink-3 flex size-9 flex-none items-center justify-center rounded-[10px]">
+                  <Icon name={BLOCK_ICONS[type]} className="size-[18px]" />
+                </span>
+                <span>
+                  <b className="block text-[14px] font-semibold">{BLOCK_LABELS[type]}</b>
+                  <span className="text-ink-3 block text-[12.5px] leading-[1.4]">
+                    {BLOCK_ABOUT[type]}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
         <button
           type="button"
-          onClick={() => setBlocks((prev) => [...prev, emptyBlock(adding)])}
-          className="border-line-2 text-ink hover:border-ink-2 cursor-pointer rounded-full border px-4 py-2 text-[13.5px] font-semibold"
+          onClick={() => setPicking(true)}
+          className="border-line-2 text-ink-2 hover:border-aurora/50 hover:text-ink flex cursor-pointer items-center justify-center gap-2 rounded-[14px] border border-dashed py-4 text-[14px] font-semibold transition"
         >
+          <Icon name="plus" className="size-[18px]" />
           Добавить блок
         </button>
-      </div>
+      )}
 
-      <div className="border-line bg-bg-2 sticky bottom-0 flex flex-wrap items-center gap-3 rounded-[14px] border p-4">
+      <div className="border-line bg-bg-2/95 sticky bottom-0 z-10 flex flex-wrap items-center gap-3 rounded-[14px] border p-4 backdrop-blur">
         <button
           type="button"
           disabled={pending}
@@ -390,7 +457,7 @@ export function BlockEditor({
               }
             });
           }}
-          className="bg-aurora text-aurora-ink hover:bg-aurora-hi cursor-pointer rounded-full px-5 py-2.5 text-[14px] font-semibold disabled:opacity-60"
+          className="bg-aurora text-aurora-ink hover:bg-aurora-hi cursor-pointer rounded-full px-6 py-2.5 text-[14px] font-semibold disabled:opacity-60"
         >
           {pending ? 'Сохраняем…' : 'Сохранить страницу'}
         </button>
@@ -406,7 +473,9 @@ export function BlockEditor({
         ) : null}
         {saved && !pending ? <span className="text-aurora text-[13.5px]">Сохранено</span> : null}
         {error ? <span className="text-busy text-[13.5px]">{error}</span> : null}
-        <span className="text-ink-3 ml-auto text-[12.5px]">Блоков: {blocks.length}</span>
+        <span className="text-ink-3 ml-auto text-[12.5px]">
+          {blocks.length === 0 ? 'Блоков нет' : `Блоков: ${blocks.length}`}
+        </span>
       </div>
     </div>
   );

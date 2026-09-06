@@ -8,16 +8,16 @@ import { deletePrice, movePrice, savePrice } from '@/lib/admin/catalog-actions';
 export const metadata = { title: 'Цены' };
 
 const columns: Column[] = [
-  { name: 'title', label: 'Название', placeholder: 'Проживание' },
-  { name: 'amount', label: 'Сумма, ₽', type: 'number', placeholder: 'пусто = по запросу' },
+  { name: 'title', label: 'Что оплачивается', placeholder: 'Проживание' },
+  { name: 'amount', label: 'Сумма, ₽', type: 'number', placeholder: 'можно оставить пустой' },
   {
     name: 'unit',
-    label: 'Единица',
-    placeholder: 'с человека в сутки; без суммы — «включено» или «по запросу»',
+    label: 'За что',
+    placeholder: 'с человека в сутки · или «входит в тур», если суммы нет',
   },
   {
     name: 'group',
-    label: 'Группа',
+    label: 'Где показывать',
     type: 'select',
     options: [
       { value: 'base', label: 'Основной прайс' },
@@ -32,14 +32,21 @@ export default async function PricesPage() {
   const rows = await db.select().from(prices).orderBy(asc(prices.sort));
 
   return (
-    <div className="max-w-4xl">
+    <div>
       <AdminHeading
         title="Цены"
-        description="Без суммы на сайте показывается то, что написано в «Единице» — например «включено». Если и там пусто, будет «по запросу»."
+        description="То, что гость видит в разделе «Цены» на сайте. Порядок строк здесь — порядок на сайте."
       />
       <RowsEditor
+        icon="price"
         rows={rows.map((row) => ({
           id: row.id,
+          /* В свёрнутом виде — как на сайте: название и цена справа. */
+          title: row.title,
+          note: `${row.amount === null ? row.unit || 'по запросу' : `${row.amount.toLocaleString('ru-RU')} ₽ ${row.unit}`}${
+            row.group === 'extra' ? ' · дополнительно' : ''
+          }`,
+          hidden: !row.visible,
           values: {
             title: row.title,
             amount: row.amount,
@@ -53,7 +60,8 @@ export default async function PricesPage() {
         save={savePrice}
         remove={deletePrice}
         move={movePrice}
-        addLabel="Добавить строку"
+        addLabel="Добавить строку в прайс"
+        emptyText="Пока ни одной цены. Гость увидит пустой раздел — добавьте хотя бы проживание."
       />
     </div>
   );

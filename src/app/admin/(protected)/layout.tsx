@@ -1,13 +1,21 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { eq, sql } from 'drizzle-orm';
+import { db } from '@/db';
+import { requests } from '@/db/schema';
 import { destroySession, getSessionUser } from '@/lib/auth/session';
 import { Nav } from '@/components/admin/Nav';
+import { Icon } from '@/components/admin/icons';
 
 /* Проверка здесь, а не в middleware: middleware крутится на edge и не ходит в БД,
    так что там можно проверить только наличие куки, но не её валидность. */
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser();
   if (!user) redirect('/admin/login');
+
+  const [counts] = await db
+    .select({ fresh: sql<number>`count(*) filter (where ${requests.status} = 'new')::int` })
+    .from(requests);
 
   async function logout() {
     'use server';
@@ -16,27 +24,44 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   }
 
   return (
-    <div className="min-h-dvh lg:grid lg:grid-cols-[236px_1fr]">
-      <aside className="border-line bg-bg-2 border-b px-4 py-6 lg:min-h-dvh lg:border-r lg:border-b-0">
-        <Link href="/admin" className="font-display mb-7 block px-3 text-[15px] font-semibold">
-          NORDBASE
+    <div className="lg:grid lg:min-h-dvh lg:grid-cols-[254px_1fr]">
+      <aside className="border-line bg-bg-0 flex flex-col border-b px-3 py-5 lg:sticky lg:top-0 lg:h-dvh lg:border-r lg:border-b-0">
+        <Link href="/admin" className="mb-6 flex items-center gap-2.5 px-3">
+          <span className="from-aurora via-ice to-violet size-6 flex-none rounded-full bg-conic" />
+          <span className="font-display text-[15px] font-semibold">NORDBASE</span>
         </Link>
-        <Nav />
-        <div className="border-line text-ink-3 mt-8 border-t px-3 pt-5 text-[13px]">
-          <p className="text-ink-2">{user.name}</p>
-          <p className="mb-3">{user.role === 'owner' ? 'владелец' : 'менеджер'}</p>
-          <Link href="/" target="_blank" className="hover:text-ink block">
-            Открыть сайт ↗
+
+        <Nav newRequests={counts?.fresh ?? 0} />
+
+        <div className="border-line mt-auto border-t px-3 pt-4 pb-2">
+          <Link
+            href="/"
+            target="_blank"
+            className="text-ink-2 hover:bg-bg-3 hover:text-ink mb-1 flex items-center gap-2.5 rounded-[10px] px-0 py-2 text-[13.5px]"
+          >
+            <Icon name="external" className="size-[18px]" />
+            Открыть сайт
           </Link>
-          <form action={logout}>
-            <button type="submit" className="hover:text-ink mt-1 cursor-pointer">
-              Выйти
-            </button>
-          </form>
+          <div className="flex items-center justify-between gap-2">
+            <span className="min-w-0">
+              <span className="text-ink block truncate text-[13px] font-semibold">{user.name}</span>
+              <span className="text-ink-3 block text-[11.5px]">
+                {user.role === 'owner' ? 'владелец' : 'менеджер'}
+              </span>
+            </span>
+            <form action={logout}>
+              <button
+                type="submit"
+                className="text-ink-3 hover:text-ink cursor-pointer text-[12.5px] whitespace-nowrap"
+              >
+                Выйти
+              </button>
+            </form>
+          </div>
         </div>
       </aside>
 
-      <main className="px-5 py-8 sm:px-8">{children}</main>
+      <main className="mx-auto w-full max-w-[1080px] px-5 py-8 sm:px-8 sm:py-10">{children}</main>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { asc } from 'drizzle-orm';
 import { db } from '@/db';
 import { houses } from '@/db/schema';
-import { AdminHeading, LinkButton } from '@/components/admin/ui';
+import { AdminHeading, EmptyState, LinkButton } from '@/components/admin/ui';
 import { EntityList } from '@/components/admin/EntityList';
 import { deleteHouse, moveHouse } from '@/lib/admin/content-actions';
 
@@ -11,12 +11,21 @@ export default async function HousesList() {
   const rows = await db.select().from(houses).orderBy(asc(houses.sort));
 
   return (
-    <div className="max-w-4xl">
+    <div>
       <AdminHeading
         title="Домики"
-        description="Порядок здесь определяет порядок на сайте. Черновики на сайте не видны."
-        action={<LinkButton href="/admin/houses/new">Новый домик</LinkButton>}
+        description="Карточки домиков на сайте. Порядок здесь — порядок на сайте; скрытые гость не увидит."
+        action={<LinkButton href="/admin/houses/new">Добавить домик</LinkButton>}
       />
+
+      {rows.length === 0 ? (
+        <EmptyState
+          icon="house"
+          title="Домиков пока нет"
+          description="Заведите домик: название, вместимость, цену и фотографии. После этого он появится на сайте."
+          action={<LinkButton href="/admin/houses/new">Добавить домик</LinkButton>}
+        />
+      ) : null}
       <EntityList
         rows={rows.map((row) => ({
           id: row.id,
@@ -26,6 +35,7 @@ export default async function HousesList() {
           note: `до ${row.capacity} гостей`,
         }))}
         basePath="/admin/houses"
+        icon="house"
         move={moveHouse}
         remove={deleteHouse}
         removeWarning="Вместе с домиком удалятся все его брони и занятые даты."

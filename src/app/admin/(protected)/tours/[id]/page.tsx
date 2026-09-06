@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { asc, eq } from 'drizzle-orm';
 import { db } from '@/db';
@@ -57,15 +56,11 @@ export default async function TourEditor({ params }: { params: Promise<{ id: str
     .map(([, day]) => day);
 
   return (
-    <div className="max-w-5xl">
+    <div>
       <AdminHeading
         title={tour ? tour.title : 'Новый тур'}
         description={tour ? `/rybachiy/tury/${tour.slug}` : undefined}
-        action={
-          <Link href="/admin/tours" className="text-ink-2 hover:text-ink text-[13.5px]">
-            ← Все туры
-          </Link>
-        }
+        back={{ href: '/admin/tours', label: 'Все туры' }}
       />
 
       <Panel className="mb-6">

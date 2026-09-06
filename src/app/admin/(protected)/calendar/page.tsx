@@ -61,10 +61,10 @@ export default async function CalendarPage() {
   const houseById = new Map(houseRows.map((h) => [h.id, h.title]));
 
   return (
-    <div className="max-w-5xl">
+    <div>
       <AdminHeading
         title="Занятость домиков"
-        description="Единый источник для сайта и для вас: занятые даты видны и здесь, и гостю."
+        description="Даты вы отмечаете сами — автоматически ничего не бронируется. Что отмечено здесь, то гость видит на сайте как занятое."
       />
 
       <div className="mb-8 grid gap-6">
@@ -105,7 +105,10 @@ export default async function CalendarPage() {
       </div>
 
       <Panel className="mb-8">
-        <h2 className="mb-4 text-[15px] font-bold">Добавить бронь вручную</h2>
+        <h2 className="mb-1 text-[15px] font-bold">Добавить бронь</h2>
+        <p className="text-ink-3 mb-4 text-[13px]">
+          Подтвердили заезд по телефону — отметьте даты здесь, чтобы они пропали из свободных.
+        </p>
         <BookingForm houses={houseRows.map((h) => ({ id: h.id, title: h.title }))} />
       </Panel>
 

@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
@@ -29,15 +28,11 @@ export default async function SeasonEditor({ params }: { params: Promise<{ id: s
   if (!isNew && !season) notFound();
 
   return (
-    <div className="max-w-5xl">
+    <div>
       <AdminHeading
         title={season ? season.title : 'Новый сезон'}
         description={season ? `/teriberka/${season.slug}` : undefined}
-        action={
-          <Link href="/admin/seasons" className="text-ink-2 hover:text-ink text-[13.5px]">
-            ← Все сезоны
-          </Link>
-        }
+        back={{ href: '/admin/seasons', label: 'Все сезоны' }}
       />
 
       <Panel className="mb-6">

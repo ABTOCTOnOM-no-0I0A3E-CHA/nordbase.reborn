@@ -13,7 +13,7 @@ export default async function MediaPage() {
   const rows = await db.select().from(media).orderBy(desc(media.createdAt));
 
   return (
-    <div className="max-w-6xl">
+    <div>
       <AdminHeading
         title="Медиатека"
         description="Все фотографии сайта. При загрузке каждая приводится к WebP и уменьшается до 2560 px по длинной стороне."

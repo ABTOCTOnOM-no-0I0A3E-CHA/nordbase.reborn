@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
@@ -32,15 +31,11 @@ export default async function HouseEditor({ params }: { params: Promise<{ id: st
   if (!isNew && !house) notFound();
 
   return (
-    <div className="max-w-5xl">
+    <div>
       <AdminHeading
         title={house ? house.title : 'Новый домик'}
         description={house ? `/rybachiy/doma/${house.slug}` : 'Заполните карточку и сохраните.'}
-        action={
-          <Link href="/admin/houses" className="text-ink-2 hover:text-ink text-[13.5px]">
-            ← Все домики
-          </Link>
-        }
+        back={{ href: '/admin/houses', label: 'Все домики' }}
       />
 
       <Panel className="mb-6">

@@ -3,7 +3,6 @@ import { db } from '@/db';
 import { houses, requests, tours } from '@/db/schema';
 import { AdminHeading, ConfirmSubmit, Panel, Select, Submit } from '@/components/admin/ui';
 import { deleteRequest, setRequestStatus } from '@/lib/admin/request-actions';
-import { BookFromRequest } from '@/components/admin/BookFromRequest';
 
 export const metadata = { title: 'Заявки' };
 
@@ -40,10 +39,10 @@ export default async function RequestsPage() {
     .orderBy(desc(requests.createdAt));
 
   return (
-    <div className="max-w-4xl">
+    <div>
       <AdminHeading
         title="Заявки"
-        description="Приходят с сайта и дублируются в Telegram. Здесь — полная история."
+        description="Приходят с сайта и дублируются в Telegram. Заявка ничего не бронирует: договорились с гостем — отметьте даты в разделе «Занятость»."
         action={
           <a
             href="/admin/requests/export"
@@ -125,10 +124,6 @@ export default async function RequestsPage() {
                   </Select>
                   <Submit variant="ghost">Обновить</Submit>
                 </form>
-
-                {request.houseId && request.dateFrom && request.dateTo ? (
-                  <BookFromRequest requestId={request.id} />
-                ) : null}
 
                 <form action={deleteRequest} className="ml-auto">
                   <input type="hidden" name="id" value={request.id} />

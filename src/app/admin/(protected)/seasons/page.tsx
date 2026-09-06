@@ -1,7 +1,7 @@
 import { asc } from 'drizzle-orm';
 import { db } from '@/db';
 import { seasons } from '@/db/schema';
-import { AdminHeading, LinkButton } from '@/components/admin/ui';
+import { AdminHeading, EmptyState, LinkButton } from '@/components/admin/ui';
 import { EntityList } from '@/components/admin/EntityList';
 import { deleteSeason, moveSeason } from '@/lib/admin/content-actions';
 
@@ -11,12 +11,21 @@ export default async function SeasonsList() {
   const rows = await db.select().from(seasons).orderBy(asc(seasons.sort));
 
   return (
-    <div className="max-w-4xl">
+    <div>
       <AdminHeading
         title="Сезоны Териберки"
-        description="Попадают в блок «Сезоны» и получают отдельную страницу каждый."
-        action={<LinkButton href="/admin/seasons/new">Новый сезон</LinkButton>}
+        description="Зима, весна, лето, осень. Каждый сезон получает свою страницу и карточку в блоке «Сезоны»."
+        action={<LinkButton href="/admin/seasons/new">Добавить сезон</LinkButton>}
       />
+
+      {rows.length === 0 ? (
+        <EmptyState
+          icon="season"
+          title="Сезонов пока нет"
+          description="Добавьте сезон с фотографией и рассказом — гость выберет, когда ему интереснее приехать."
+          action={<LinkButton href="/admin/seasons/new">Добавить сезон</LinkButton>}
+        />
+      ) : null}
       <EntityList
         rows={rows.map((row) => ({
           id: row.id,
@@ -25,6 +34,7 @@ export default async function SeasonsList() {
           status: row.status,
         }))}
         basePath="/admin/seasons"
+        icon="season"
         move={moveSeason}
         remove={deleteSeason}
       />

@@ -3,9 +3,10 @@
 import Link from 'next/link';
 import { useFormStatus } from 'react-dom';
 import type { ReactNode } from 'react';
+import { Icon, type IconName } from './icons';
 
 export const inputClass =
-  'w-full rounded-[9px] border border-line-2 bg-bg-2 px-3 py-2 text-[14px] text-ink placeholder:text-ink-3 focus:border-transparent focus:outline-2 focus:outline-aurora';
+  'w-full rounded-[10px] border border-line-2 bg-bg-2 px-3.5 py-2.5 text-[14.5px] text-ink placeholder:text-ink-3 transition hover:border-ink-3/60 focus:border-transparent focus:outline-2 focus:outline-aurora';
 
 export function Field({
   label,
@@ -18,9 +19,11 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <span className="text-ink-3 mb-1.5 block text-[12px] font-semibold">{label}</span>
+      <span className="text-ink mb-1.5 block text-[13px] font-semibold">{label}</span>
       {children}
-      {hint ? <span className="text-ink-3 mt-1 block text-[11.5px]">{hint}</span> : null}
+      {hint ? (
+        <span className="text-ink-3 mt-1.5 block text-[12px] leading-[1.45]">{hint}</span>
+      ) : null}
     </label>
   );
 }
@@ -54,7 +57,7 @@ export function Submit({
   const pending = pendingProp ?? status.pending;
   const look = {
     solid: 'bg-aurora text-aurora-ink hover:bg-aurora-hi',
-    ghost: 'border border-line-2 text-ink-2 hover:text-ink',
+    ghost: 'border border-line-2 text-ink-2 hover:border-ink-3 hover:text-ink',
     danger: 'border border-busy/50 text-busy hover:bg-busy/10',
   }[variant];
 
@@ -62,9 +65,9 @@ export function Submit({
     <button
       type="submit"
       disabled={pending}
-      className={`cursor-pointer rounded-full px-4 py-2 text-[13.5px] font-semibold disabled:opacity-50 ${look}`}
+      className={`cursor-pointer rounded-full px-5 py-2.5 text-[14px] font-semibold transition disabled:opacity-50 ${look}`}
     >
-      {pending ? '…' : children}
+      {pending ? 'Сохраняем…' : children}
     </button>
   );
 }
@@ -80,44 +83,118 @@ export function ConfirmSubmit({ message, children }: { message: string; children
       onClick={(event) => {
         if (!window.confirm(message)) event.preventDefault();
       }}
-      className="border-busy/50 text-busy hover:bg-busy/10 cursor-pointer rounded-full border px-3 py-1.5 text-[12.5px] font-semibold disabled:opacity-50"
+      className="border-busy/40 text-busy hover:bg-busy/10 hover:border-busy/70 cursor-pointer rounded-full border px-3.5 py-1.5 text-[12.5px] font-semibold transition disabled:opacity-50"
     >
       {children}
     </button>
   );
 }
 
+/* Шапка раздела: крупный заголовок, объяснение обычным языком и главное
+   действие справа. Объяснение обязательно — владелец не разработчик и не
+   должен догадываться, зачем нужен раздел. */
 export function AdminHeading({
   title,
   description,
   action,
+  back,
 }: {
   title: string;
   description?: string;
   action?: ReactNode;
+  back?: { href: string; label: string };
 }) {
   return (
-    <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-        {description ? <p className="text-ink-3 mt-1 text-[14px]">{description}</p> : null}
+    <div className="mb-7">
+      {back ? (
+        <Link
+          href={back.href}
+          className="text-ink-3 hover:text-ink mb-3 inline-flex items-center gap-1.5 text-[13px]"
+        >
+          ← {back.label}
+        </Link>
+      ) : null}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-[26px] font-bold tracking-[-0.02em]">{title}</h1>
+          {description ? (
+            <p className="text-ink-2 mt-1.5 max-w-[62ch] text-[14px] leading-[1.5]">{description}</p>
+          ) : null}
+        </div>
+        {action}
       </div>
-      {action}
     </div>
   );
 }
 
-export function Panel({ children, className = '' }: { children: ReactNode; className?: string }) {
+export function Panel({
+  children,
+  className = '',
+  title,
+  description,
+}: {
+  children: ReactNode;
+  className?: string;
+  title?: string;
+  description?: string;
+}) {
   return (
-    <div className={`bg-bg-3 border-line rounded-[14px] border p-5 ${className}`}>{children}</div>
+    <section className={`bg-bg-3 border-line rounded-[16px] border ${className}`}>
+      {title ? (
+        <header className="border-line border-b px-5 py-4">
+          <h2 className="text-[15px] font-bold">{title}</h2>
+          {description ? (
+            <p className="text-ink-3 mt-1 text-[13px] leading-[1.45]">{description}</p>
+          ) : null}
+        </header>
+      ) : null}
+      <div className="p-5">{children}</div>
+    </section>
   );
 }
 
-export function LinkButton({ href, children }: { href: string; children: ReactNode }) {
+/* Пустой раздел — самый частый первый экран у нового владельца. Вместо голого
+   «ничего нет» объясняем, что это такое и что нажать. */
+export function EmptyState({
+  icon,
+  title,
+  description,
+  action,
+}: {
+  icon: IconName;
+  title: string;
+  description: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="border-line-2 flex flex-col items-center gap-3 rounded-[16px] border border-dashed px-6 py-12 text-center">
+      <span className="bg-bg-3 text-ink-3 flex size-11 items-center justify-center rounded-full">
+        <Icon name={icon} className="size-5" />
+      </span>
+      <b className="text-[16px] font-semibold">{title}</b>
+      <p className="text-ink-2 max-w-[46ch] text-[13.5px] leading-[1.5]">{description}</p>
+      {action ? <div className="mt-1">{action}</div> : null}
+    </div>
+  );
+}
+
+export function LinkButton({
+  href,
+  children,
+  variant = 'solid',
+}: {
+  href: string;
+  children: ReactNode;
+  variant?: 'solid' | 'ghost';
+}) {
+  const look =
+    variant === 'solid'
+      ? 'bg-aurora text-aurora-ink hover:bg-aurora-hi'
+      : 'border border-line-2 text-ink-2 hover:border-ink-3 hover:text-ink';
   return (
     <Link
       href={href}
-      className="bg-aurora text-aurora-ink hover:bg-aurora-hi rounded-full px-4 py-2 text-[13.5px] font-semibold"
+      className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[14px] font-semibold transition ${look}`}
     >
       {children}
     </Link>

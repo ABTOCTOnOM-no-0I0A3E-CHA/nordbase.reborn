@@ -55,7 +55,10 @@ export async function uploadOne(
     revalidatePath('/admin/media');
     revalidatePath('/', 'layout');
     return { media: row };
-  } catch {
+  } catch (cause) {
+    /* Причину пишем в журнал: владельцу она не нужна, а без неё разбираться,
+       почему конкретный файл не берётся, невозможно. */
+    console.error('Загрузка не удалась:', file.name, cause);
     return { error: 'Не удалось обработать изображение' };
   }
 }

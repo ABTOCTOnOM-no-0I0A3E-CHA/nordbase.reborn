@@ -5,11 +5,17 @@ import { AdminHeading, Field, Input, Panel, Submit, Textarea } from '@/component
 import { MenuFields } from '@/components/admin/MenuFields';
 import { NumberField } from '@/components/form/NumberField';
 import { ActionForm } from '@/components/admin/ActionForm';
+import { CoverField } from '@/components/admin/CoverField';
+import { loadMediaOptions } from '@/lib/admin/media-options';
 
 export const metadata = { title: 'Настройки' };
 
 export default async function SettingsPage() {
-  const [settings, user] = await Promise.all([loadSettings(), getSessionUser()]);
+  const [settings, user, mediaOptions] = await Promise.all([
+    loadSettings(),
+    getSessionUser(),
+    loadMediaOptions(),
+  ]);
   const isOwner = user?.role === 'owner';
 
   return (
@@ -102,6 +108,41 @@ export default async function SettingsPage() {
                   rows={4}
                   defaultValue={settings.directions.join('\n')}
                 />
+              </Field>
+            </div>
+
+            <div className="sm:col-span-2">
+              <Field
+                label="Код Яндекс.Вебмастера"
+                hint="Из раздела «Настройки → Права доступа». Можно вставить тег целиком — лишнее уберём"
+              >
+                <Input
+                  name="yandexVerification"
+                  defaultValue={settings.yandexVerification}
+                  placeholder="a1b2c3d4e5f6"
+                />
+              </Field>
+            </div>
+
+            <div className="sm:col-span-2">
+              <Field
+                label="Код Google Search Console"
+                hint="Способ подтверждения «HTML-тег». Тоже можно целиком"
+              >
+                <Input
+                  name="googleVerification"
+                  defaultValue={settings.googleVerification}
+                  placeholder="AbC-dEf123"
+                />
+              </Field>
+            </div>
+
+            <div className="sm:col-span-2">
+              <Field
+                label="Картинка для мессенджеров"
+                hint="Её видят, когда ссылку на сайт кидают в Telegram, WhatsApp или ВКонтакте. Лучше горизонтальную, 1200×630"
+              >
+                <CoverField name="ogMediaId" defaultValue={settings.ogMediaId} options={mediaOptions} />
               </Field>
             </div>
 

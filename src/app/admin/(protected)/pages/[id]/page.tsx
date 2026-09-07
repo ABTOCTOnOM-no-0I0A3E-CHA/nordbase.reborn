@@ -6,6 +6,7 @@ import { pages, pageVersions } from '@/db/schema';
 import { parseBlocks } from '@/lib/blocks';
 import { isUuid } from '@/lib/uuid';
 import { loadMediaOptions } from '@/lib/admin/media-options';
+import { loadSettings } from '@/lib/site-data';
 import { deletePage, restorePageVersion, savePage, savePageBlocks } from '@/lib/admin/content-actions';
 import {
   AdminHeading,
@@ -15,9 +16,9 @@ import {
   Panel,
   Select,
   Submit,
-  Textarea,
 } from '@/components/admin/ui';
 import { BlockEditor } from '@/components/admin/BlockEditor';
+import { SnippetPreview } from '@/components/admin/SnippetPreview';
 import { ActionForm } from '@/components/admin/ActionForm';
 import { EntityForm } from '@/components/admin/EntityForm';
 
@@ -29,7 +30,7 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
      Postgres — это обычная «страница не найдена». */
   if (!isUuid(id)) notFound();
 
-  const [rows, media, versions] = await Promise.all([
+  const [rows, media, versions, settings] = await Promise.all([
     db.select().from(pages).where(eq(pages.id, id)).limit(1),
     loadMediaOptions(),
     db
@@ -38,6 +39,7 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
       .where(eq(pageVersions.pageId, id))
       .orderBy(desc(pageVersions.createdAt))
       .limit(10),
+    loadSettings(),
   ]);
 
   const page = rows[0];
@@ -64,9 +66,6 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
           <Field label="Адрес на сайте" hint="Пустое поле — главная страница">
             <Input name="slug" defaultValue={page.slug} pattern="[a-z0-9\-/]*" maxLength={160} />
           </Field>
-          <Field label="Заголовок для поиска">
-            <Input name="seoTitle" defaultValue={page.seoTitle ?? ''} />
-          </Field>
           <Field label="Состояние">
             <Select
               name="status"
@@ -78,9 +77,15 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
             />
           </Field>
           <div className="sm:col-span-2">
-            <Field label="Описание для поиска">
-              <Textarea name="seoDescription" rows={2} defaultValue={page.seoDescription ?? ''} />
-            </Field>
+            <SnippetPreview
+              siteName={settings.brandName}
+              path={`/${page.slug}`}
+              titleName="seoTitle"
+              descriptionName="seoDescription"
+              defaultTitle={page.seoTitle ?? ''}
+              defaultDescription={page.seoDescription ?? ''}
+              fallbackTitle={page.title}
+            />
           </div>
         </EntityForm>
       </Panel>

@@ -191,6 +191,13 @@ export type SiteSettings = {
   menu: { label: string; href: string }[];
   /* Варианты в поле «Куда едете» формы заявки. */
   directions: string[];
+  /* Коды подтверждения прав в панелях вебмастера. Владелец вставляет их сам:
+     в коде им не место — сайт один, а панели заводятся под его аккаунты. */
+  yandexVerification: string;
+  googleVerification: string;
+  /* Картинка, которую видят в мессенджерах и соцсетях, когда у страницы нет
+     своей. Id файла в медиатеке, как и у всех остальных обложек. */
+  ogMediaId: string;
 };
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -210,6 +217,9 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   address: 'Полуостров Рыбачий, Мурманская область',
   lat: 69.785748,
   lng: 32.102471,
+  yandexVerification: '',
+  googleVerification: '',
+  ogMediaId: '',
   menu: [
     { label: 'Рыбачий', href: '/rybachiy' },
     { label: 'Туры', href: '/rybachiy/tury' },
@@ -232,6 +242,9 @@ const settingsSchema = z.object({
   reviewsUrl: z.string().catch(DEFAULT_SETTINGS.reviewsUrl),
   reviewsLabel: z.string().catch(DEFAULT_SETTINGS.reviewsLabel),
   directions: z.array(z.string()).catch(DEFAULT_SETTINGS.directions),
+  yandexVerification: z.string().catch(DEFAULT_SETTINGS.yandexVerification),
+  googleVerification: z.string().catch(DEFAULT_SETTINGS.googleVerification),
+  ogMediaId: z.string().catch(DEFAULT_SETTINGS.ogMediaId),
   phone: z.string().catch(DEFAULT_SETTINGS.phone),
   telegram: z.string().catch(DEFAULT_SETTINGS.telegram),
   whatsapp: z.string().catch(DEFAULT_SETTINGS.whatsapp),

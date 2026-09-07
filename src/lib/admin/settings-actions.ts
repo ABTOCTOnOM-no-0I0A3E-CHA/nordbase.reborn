@@ -22,7 +22,19 @@ const schema = z.object({
   address: z.string().trim().max(200),
   lat: z.coerce.number().min(-90).max(90),
   lng: z.coerce.number().min(-180).max(180),
+  /* Коды из Яндекс.Вебмастера и Google Search Console. Вставляют целиком
+     мета-тег или только его содержимое — вытаскиваем content сами. */
+  yandexVerification: z.string().trim().max(200).default(''),
+  googleVerification: z.string().trim().max(200).default(''),
+  ogMediaId: z.union([z.uuid(), z.literal('')]).default(''),
 });
+
+/* Из <meta name="yandex-verification" content="abc123" /> берём abc123:
+   владелец копирует тег целиком, и это нормально. */
+function verificationCode(value: string): string {
+  const match = value.match(/content=["']([^"']+)["']/i);
+  return (match?.[1] ?? value).trim();
+}
 
 export async function saveSettings(formData: FormData): Promise<void> {
   /* Контакты и меню меняет только владелец: менеджер работает с заявками. */
@@ -45,7 +57,13 @@ export async function saveSettings(formData: FormData): Promise<void> {
     .map((line) => line.trim())
     .filter(Boolean);
 
-  const value = { ...base, menu, directions };
+  const value = {
+    ...base,
+    yandexVerification: verificationCode(base.yandexVerification),
+    googleVerification: verificationCode(base.googleVerification),
+    menu,
+    directions,
+  };
 
   await db
     .insert(settings)

@@ -11,6 +11,7 @@ import { Picture } from './Picture';
 import { safeHref } from '@/lib/safe-href';
 import { RequestForm } from '@/components/site/RequestForm';
 import { Faq } from '@/components/site/Faq';
+import { FaqLd } from '@/components/site/Schema';
 import { MapWidget } from '@/components/site/MapWidget';
 
 const money = (value: number | null) =>
@@ -553,6 +554,9 @@ function Body({ block, data }: { block: Block; data: BlockData }) {
       return (
         <>
           <SectionHead eyebrow={block.eyebrow} title={block.title} subtitle={block.subtitle} />
+          {/* Те же вопросы уходят в разметку: Яндекс разворачивает их прямо
+              под сниппетом, и страница занимает вдвое больше места в выдаче. */}
+          <FaqLd items={data.faq.map((item) => ({ question: item.question, answer: item.answer }))} />
           <Faq items={data.faq} />
         </>
       );

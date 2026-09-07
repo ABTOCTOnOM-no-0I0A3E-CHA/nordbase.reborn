@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { mediaKey, pageMetadata } from '@/lib/seo';
 import { notFound } from 'next/navigation';
 import { and, asc, eq } from 'drizzle-orm';
 import { db } from '@/db';
@@ -7,6 +8,8 @@ import { parseBlocks } from '@/lib/blocks';
 import { loadBlockData, loadSettings, parseMeta } from '@/lib/site-data';
 import { BlockList } from '@/components/blocks/render';
 import { Btn, Card, Eyebrow, Section } from '@/components/site/ui';
+import { BreadcrumbsLd, TourLd } from '@/components/site/Schema';
+import { mediaUrl } from '@/lib/media-url';
 
 type Params = { slug: string };
 
@@ -27,7 +30,13 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const tour = await findTour((await params).slug);
   if (!tour) return {};
-  return { title: tour.title, description: tour.summary };
+  return pageMetadata({
+    title: tour.title,
+    description: tour.summary,
+    path: `/rybachiy/tury/${tour.slug}`,
+    imageKey: await mediaKey(tour.coverId),
+    type: 'article',
+  });
 }
 
 export default async function TourPage({ params }: { params: Promise<Params> }) {
@@ -60,8 +69,18 @@ export default async function TourPage({ params }: { params: Promise<Params> }) 
   const blocks = parseBlocks(tour.body);
   const [data, settings] = await Promise.all([loadBlockData(blocks), loadSettings()]);
 
+  const coverKey = await mediaKey(tour.coverId);
+
   return (
     <>
+      <TourLd tour={tour} imageUrl={coverKey ? mediaUrl(coverKey) : undefined} />
+      <BreadcrumbsLd
+        items={[
+          { name: 'Главная', path: '/' },
+          { name: 'Туры по Рыбачьему', path: '/rybachiy/tury' },
+          { name: tour.title, path: `/rybachiy/tury/${tour.slug}` },
+        ]}
+      />
       <Section>
         <div className="pt-24">
           <Eyebrow>Туры по Рыбачьему</Eyebrow>

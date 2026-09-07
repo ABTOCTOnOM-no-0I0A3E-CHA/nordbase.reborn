@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { mediaKey, pageMetadata } from '@/lib/seo';
 import { notFound } from 'next/navigation';
 import { and, asc, eq } from 'drizzle-orm';
 import { db } from '@/db';
@@ -8,6 +9,8 @@ import { loadBlockData, loadSettings, parseMeta } from '@/lib/site-data';
 import { BlockList } from '@/components/blocks/render';
 import { Picture } from '@/components/blocks/Picture';
 import { Btn, Card, Eyebrow, Section } from '@/components/site/ui';
+import { BreadcrumbsLd, HouseLd } from '@/components/site/Schema';
+import { mediaUrl } from '@/lib/media-url';
 
 type Params = { slug: string };
 
@@ -32,7 +35,13 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const house = await findHouse((await params).slug);
   if (!house) return {};
-  return { title: house.title, description: house.summary };
+  return pageMetadata({
+    title: house.title,
+    description: house.summary,
+    path: `/rybachiy/doma/${house.slug}`,
+    imageKey: await mediaKey(house.coverId),
+    type: 'article',
+  });
 }
 
 export default async function HousePage({ params }: { params: Promise<Params> }) {
@@ -62,6 +71,18 @@ export default async function HousePage({ params }: { params: Promise<Params> })
 
   return (
     <>
+      <HouseLd
+        house={house}
+        imageUrl={cover ? mediaUrl(cover.key) : undefined}
+        amenities={parseMeta(house.meta)}
+      />
+      <BreadcrumbsLd
+        items={[
+          { name: 'Главная', path: '/' },
+          { name: 'Полуостров Рыбачий', path: '/rybachiy' },
+          { name: house.title, path: `/rybachiy/doma/${house.slug}` },
+        ]}
+      />
       <Section>
         <div className="pt-24">
           <Eyebrow>Домики: {settings.legalName}</Eyebrow>

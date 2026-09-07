@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { mediaKey, pageMetadata } from '@/lib/seo';
+import { BreadcrumbsLd } from '@/components/site/Schema';
 import { notFound } from 'next/navigation';
 import { and, eq } from 'drizzle-orm';
 import { db } from '@/db';
@@ -28,7 +30,13 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const season = await findSeason((await params).season);
   if (!season) return {};
-  return { title: `Териберка — ${season.title.toLowerCase()}` };
+  return pageMetadata({
+    title: `Териберка — ${season.title.toLowerCase()}`,
+    description: `Туры в Териберку: ${season.title.toLowerCase()}. Северное сияние, Баренцево море, кладбище кораблей и водопад.`,
+    path: `/teriberka/${season.slug}`,
+    imageKey: await mediaKey(season.coverId),
+    type: 'article',
+  });
 }
 
 export default async function SeasonPage({ params }: { params: Promise<Params> }) {
@@ -46,6 +54,13 @@ export default async function SeasonPage({ params }: { params: Promise<Params> }
 
   return (
     <>
+      <BreadcrumbsLd
+        items={[
+          { name: 'Главная', path: '/' },
+          { name: 'Териберка', path: '/teriberka' },
+          { name: season.title, path: `/teriberka/${season.slug}` },
+        ]}
+      />
       <Section>
         <div className="pt-24">
           <Eyebrow>Териберка</Eyebrow>

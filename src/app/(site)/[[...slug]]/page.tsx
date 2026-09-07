@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { mediaKey, pageMetadata } from '@/lib/seo';
 import { notFound } from 'next/navigation';
 import { and, eq } from 'drizzle-orm';
 import { db } from '@/db';
@@ -34,11 +35,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const page = await findPage(toSlug(await params));
   if (!page) return {};
-  return {
+  return pageMetadata({
     title: page.seoTitle || page.title,
-    description: page.seoDescription ?? undefined,
-    alternates: { canonical: `/${page.slug}` },
-  };
+    description: page.seoDescription,
+    path: `/${page.slug}`,
+    imageKey: await mediaKey(page.ogMediaId),
+  });
 }
 
 export default async function Page({ params }: { params: Promise<Params> }) {

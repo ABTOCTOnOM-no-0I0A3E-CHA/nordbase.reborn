@@ -46,25 +46,39 @@ function deviceName(): string {
   return browser ? `${platform}, ${browser}` : platform;
 }
 
+/* Состояние решается в таком порядке не случайно. В обычном Safari на iPhone
+   PushManager вообще отсутствует — если сначала спрашивать про поддержку,
+   владелец увидит «браузер не умеет» ровно там, где на самом деле нужно
+   сказать «добавьте на главный экран». */
+type State = 'loading' | 'needs-install' | 'ios-old' | 'unsupported' | 'ready';
+
 export function PushToggle() {
   const toast = useToast();
-  const [supported, setSupported] = useState<boolean | null>(null);
+  const [state, setState] = useState<State>('loading');
   const [enabled, setEnabled] = useState(false);
   const [busy, setBusy] = useState(false);
-  /* iPhone присылает уведомления только приложению с главного экрана. */
-  const [needsInstall, setNeedsInstall] = useState(false);
 
   useEffect(() => {
-    const ok = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
-    setSupported(ok);
-    if (!ok) return;
-
-    const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    /* iPad с iPadOS притворяется Mac‑ом, отличаем по сенсорному экрану. */
+    const isIos =
+      /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const standalone =
       window.matchMedia('(display-mode: standalone)').matches ||
       (window.navigator as { standalone?: boolean }).standalone === true;
-    setNeedsInstall(isIos && !standalone);
+    const hasApi =
+      'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 
+    if (isIos && !standalone) {
+      setState('needs-install');
+      return;
+    }
+    if (!hasApi) {
+      setState(isIos ? 'ios-old' : 'unsupported');
+      return;
+    }
+
+    setState('ready');
     navigator.serviceWorker
       .getRegistration()
       .then((reg) => reg?.pushManager.getSubscription())
@@ -124,9 +138,37 @@ export function PushToggle() {
     }
   }
 
-  if (supported === null) return null;
+  if (state === 'loading') return null;
 
-  if (!supported) {
+  if (state === 'needs-install') {
+    return (
+      <div className="border-amber/40 bg-amber/10 rounded-[12px] border px-4 py-3.5">
+        <b className="text-amber mb-1.5 block text-[14px]">
+          Сначала добавьте панель на главный экран
+        </b>
+        <ol className="text-ink-2 grid list-decimal gap-1 pl-5 text-[13.5px] leading-[1.5]">
+          <li>Нажмите «Поделиться» — квадрат со стрелкой внизу экрана.</li>
+          <li>Выберите «На экран „Домой“».</li>
+          <li>Откройте панель с появившейся иконки и вернитесь сюда.</li>
+        </ol>
+        <p className="text-ink-3 mt-2 text-[12.5px] leading-[1.45]">
+          Так требует сам iPhone: уведомления он отдаёт только приложению с главного экрана, а не
+          вкладке браузера.
+        </p>
+      </div>
+    );
+  }
+
+  if (state === 'ios-old') {
+    return (
+      <p className="text-ink-3 text-[13.5px] leading-[1.5]">
+        Панель открыта с главного экрана, но уведомления появились только в iOS 16.4. Обновите
+        систему — или получайте заявки в Telegram и ВКонтакте, они работают на любом телефоне.
+      </p>
+    );
+  }
+
+  if (state === 'unsupported') {
     return (
       <p className="text-ink-3 text-[13.5px]">
         Этот браузер не умеет присылать уведомления. Откройте панель в Chrome, Safari или
@@ -160,12 +202,6 @@ export function PushToggle() {
         ) : null}
       </div>
 
-      {needsInstall ? (
-        <p className="text-amber bg-amber/10 mt-3 rounded-[10px] px-4 py-3 text-[13px] leading-[1.5]">
-          На iPhone уведомления приходят только приложению с главного экрана. Нажмите «Поделиться»
-          → «На экран „Домой“», откройте панель с появившейся иконки и включите уведомления там.
-        </p>
-      ) : null}
     </div>
   );
 }

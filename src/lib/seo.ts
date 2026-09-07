@@ -27,16 +27,23 @@ export async function mediaKey(id: string | null | undefined): Promise<string | 
   return rows[0]?.key ?? null;
 }
 
-/* Название базы уже в заголовке? Сравниваем и с латинским брендом, и с
-   юридическим названием — владелец пишет то одно, то другое. */
+/* Название базы уже в заголовке? Кавычки в сравнении только мешают: владелец
+   пишет «База отдыха «Север»», а в заголовке страницы это может быть «База
+   «Север» на полуострове Рыбачий». Ядро названия (то, что в кавычках) само по
+   себе слишком общее — «северное сияние» тоже содержит «север», — поэтому
+   засчитываем его лишь вместе со словом «база». */
 async function hasBrand(title: string): Promise<boolean> {
   const settings = await loadSettings();
-  const haystack = title.toLowerCase();
-  const needles = [settings.brandName, settings.legalName.replace(/[«»"]/g, '')]
-    .map((value) => value.trim().toLowerCase())
-    .filter((value) => value.length > 2);
+  const plain = (value: string) => value.toLowerCase().replace(/[«»"']/g, '').trim();
 
-  return needles.some((needle) => haystack.includes(needle));
+  const haystack = plain(title);
+  const brand = plain(settings.brandName);
+  const legal = plain(settings.legalName);
+  const core = plain(settings.legalName.match(/[«"]([^»"]+)[»"]/)?.[1] ?? '');
+
+  if (brand.length > 2 && haystack.includes(brand)) return true;
+  if (legal.length > 2 && haystack.includes(legal)) return true;
+  return core.length > 2 && haystack.includes(core) && haystack.includes('база');
 }
 
 export async function pageMetadata({

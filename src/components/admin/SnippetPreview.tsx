@@ -52,7 +52,13 @@ export function SnippetPreview({
   const [description, setDescription] = useState(defaultDescription);
 
   const shownTitle = (title || fallbackTitle).trim();
-  const full = shownTitle ? `${shownTitle} — ${siteName}` : siteName;
+  /* Название базы дописывается автоматически — но только если его нет в самом
+     заголовке. Здесь то же правило, что и на сайте, иначе предпросмотр врёт. */
+  const full = !shownTitle
+    ? siteName
+    : shownTitle.toLowerCase().includes(siteName.toLowerCase())
+      ? shownTitle
+      : `${shownTitle} — ${siteName}`;
 
   return (
     <div className="grid gap-4">

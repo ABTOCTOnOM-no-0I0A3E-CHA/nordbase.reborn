@@ -27,6 +27,18 @@ export async function mediaKey(id: string | null | undefined): Promise<string | 
   return rows[0]?.key ?? null;
 }
 
+/* Название базы уже в заголовке? Сравниваем и с латинским брендом, и с
+   юридическим названием — владелец пишет то одно, то другое. */
+async function hasBrand(title: string): Promise<boolean> {
+  const settings = await loadSettings();
+  const haystack = title.toLowerCase();
+  const needles = [settings.brandName, settings.legalName.replace(/[«»"]/g, '')]
+    .map((value) => value.trim().toLowerCase())
+    .filter((value) => value.length > 2);
+
+  return needles.some((needle) => haystack.includes(needle));
+}
+
 export async function pageMetadata({
   title,
   description,
@@ -49,7 +61,11 @@ export async function pageMetadata({
   const image = imageKey ? mediaUrl(imageKey) : await defaultImage();
 
   return {
-    title,
+    /* Шаблон в корневом layout дописывает к заголовку название базы. Владелец
+       часто вписывает его сам — получалось «Цены — база отдыха «Север» —
+       NORDBASE», и поиск такую строку обрезал. Если название уже внутри,
+       отдаём заголовок как есть. */
+    title: (await hasBrand(title)) ? { absolute: title } : title,
     description: description || undefined,
     alternates: { canonical: path },
     openGraph: {

@@ -139,6 +139,15 @@ export default async function SettingsPage() {
 
             <div className="sm:col-span-2">
               <Field
+                label="Номер счётчика Яндекс.Метрики"
+                hint="Видно, сколько людей заходит, откуда пришли и что смотрят. Пусто — счётчик не подключается"
+              >
+                <Input name="metrikaId" defaultValue={settings.metrikaId} placeholder="12345678" />
+              </Field>
+            </div>
+
+            <div className="sm:col-span-2">
+              <Field
                 label="Картинка для мессенджеров"
                 hint="Её видят, когда ссылку на сайт кидают в Telegram, WhatsApp или ВКонтакте. Лучше горизонтальную, 1200×630"
               >

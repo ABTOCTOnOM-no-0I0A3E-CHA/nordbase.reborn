@@ -27,6 +27,8 @@ const schema = z.object({
   yandexVerification: z.string().trim().max(200).default(''),
   googleVerification: z.string().trim().max(200).default(''),
   ogMediaId: z.union([z.uuid(), z.literal('')]).default(''),
+  /* Только цифры: владелец копирует номер счётчика, иногда вместе с текстом. */
+  metrikaId: z.string().trim().max(30).default(''),
 });
 
 /* Из <meta name="yandex-verification" content="abc123" /> берём abc123:
@@ -59,6 +61,7 @@ export async function saveSettings(formData: FormData): Promise<void> {
 
   const value = {
     ...base,
+    metrikaId: base.metrikaId.replace(/\D/g, ''),
     yandexVerification: verificationCode(base.yandexVerification),
     googleVerification: verificationCode(base.googleVerification),
     menu,

@@ -198,6 +198,9 @@ export type SiteSettings = {
   /* Картинка, которую видят в мессенджерах и соцсетях, когда у страницы нет
      своей. Id файла в медиатеке, как и у всех остальных обложек. */
   ogMediaId: string;
+  /* Номер счётчика Яндекс.Метрики. Пусто — счётчик не подключается вовсе,
+     и на сайт не уезжает ни одного стороннего скрипта. */
+  metrikaId: string;
 };
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -220,6 +223,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   yandexVerification: '',
   googleVerification: '',
   ogMediaId: '',
+  metrikaId: '',
   menu: [
     { label: 'Рыбачий', href: '/rybachiy' },
     { label: 'Туры', href: '/rybachiy/tury' },
@@ -245,6 +249,7 @@ const settingsSchema = z.object({
   yandexVerification: z.string().catch(DEFAULT_SETTINGS.yandexVerification),
   googleVerification: z.string().catch(DEFAULT_SETTINGS.googleVerification),
   ogMediaId: z.string().catch(DEFAULT_SETTINGS.ogMediaId),
+  metrikaId: z.string().catch(DEFAULT_SETTINGS.metrikaId),
   phone: z.string().catch(DEFAULT_SETTINGS.phone),
   telegram: z.string().catch(DEFAULT_SETTINGS.telegram),
   whatsapp: z.string().catch(DEFAULT_SETTINGS.whatsapp),

@@ -273,6 +273,29 @@ export const requests = pgTable(
   (t) => [index('requests_status_idx').on(t.status, t.createdAt)],
 );
 
+/* Телефоны и браузеры, подписанные на уведомления о заявках.
+
+   Владелец добавляет панель на главный экран и разрешает уведомления — сюда
+   попадает адрес его устройства. Каналов доставки несколько намеренно:
+   Telegram в России ходит через прокси, а прокси однажды отвалится. */
+export const pushSubscriptions = pgTable(
+  'push_subscriptions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    /* Адрес, выданный браузером; он же уникальный ключ устройства. */
+    endpoint: text('endpoint').notNull(),
+    p256dh: text('p256dh').notNull(),
+    auth: text('auth').notNull(),
+    /* Чтобы владелец узнал своё устройство в списке. */
+    label: text('label').notNull().default(''),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('push_endpoint_idx').on(t.endpoint)],
+);
+
 /* Бронь — это занятая дата. Единственный источник занятости и для сайта,
    и для календаря в админке. Может прийти из звонка, без заявки. */
 export const bookings = pgTable(

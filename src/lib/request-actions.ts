@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '@/db';
 import { houses, requests, tours } from '@/db/schema';
-import { formatRequest, sendTelegram } from './telegram';
+import { notifyAll } from './notify';
 import { allow, clientKey } from './throttle';
 
 /* Телефон принимаем в любом виде — гость пишет как привык, нормализуем сами. */
@@ -92,9 +92,9 @@ export async function submitRequest(
         : '';
 
   /* Заявка уже в базе, поэтому неудачное уведомление не должно отражаться
-     на госте: он своё дело сделал. Владелец увидит заявку в админке. */
-  const notified = await sendTelegram(
-    formatRequest('Новая заявка с сайта', [
+     на госте: он своё дело сделал. Владелец увидит заявку в админке.
+     Рассылка идёт во все настроенные каналы разом — см. lib/notify. */
+  const notified = await notifyAll('Новая заявка с сайта', [
       { label: 'Имя', value: input.name },
       { label: 'Телефон', value: input.phone },
       { label: 'Направление', value: input.direction },
@@ -106,11 +106,13 @@ export async function submitRequest(
       { label: 'Баня', value: input.banya ? 'да' : '' },
       { label: 'Комментарий', value: input.comment },
       { label: 'Номер заявки', value: saved?.id.slice(0, 8) ?? '' },
-    ]),
-  );
+  ]);
 
-  if (!notified.ok) {
-    console.warn('[request] заявка сохранена, уведомление не ушло:', notified.reason);
+  if (notified.failed.length > 0) {
+    console.warn(
+      '[request] заявка сохранена, часть каналов молчит:',
+      notified.failed.map((f) => `${f.channel} — ${f.reason}`).join('; '),
+    );
   }
 
   return { ok: true };

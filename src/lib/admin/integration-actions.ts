@@ -8,6 +8,7 @@ import { settings } from '@/db/schema';
 import { requireOwner } from '@/lib/auth/guard';
 import { TELEGRAM_KEY, loadTelegramConfig } from '@/lib/telegram-config';
 import { sendTelegramWith } from '@/lib/telegram';
+import { VK_KEY, loadVkConfig, sendVkWith } from '@/lib/vk';
 
 /* Адрес API и прокси — это URL. Пустая строка означает «не задано». */
 const optionalUrl = z
@@ -97,5 +98,60 @@ export async function testTelegram(
 
   return sent.ok
     ? { ok: 'Сообщение отправлено — проверьте чат' }
+    : { error: sent.reason ?? 'Не удалось отправить' };
+}
+
+
+/* ------------------------------------------------------------ ВКонтакте */
+
+const vkSchema = z.object({
+  token: z.string().trim().max(300).default(''),
+  peerId: z.string().trim().regex(/^\d*$/, 'Id получателя — это число').max(30).default(''),
+});
+
+export async function saveVk(
+  _prev: IntegrationState,
+  formData: FormData,
+): Promise<IntegrationState> {
+  /* Ключ сообщества — такой же секрет, как токен бота. */
+  await requireOwner();
+
+  const parsed = vkSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Проверьте поля' };
+
+  const previous = await loadVkConfig();
+  const value = {
+    /* Пустое поле ключа — «оставить как было», как и у Telegram. */
+    token: parsed.data.token || previous.token,
+    peerId: parsed.data.peerId,
+  };
+
+  await db
+    .insert(settings)
+    .values({ key: VK_KEY, value, updatedAt: new Date() })
+    .onConflictDoUpdate({ target: settings.key, set: { value, updatedAt: new Date() } });
+
+  revalidatePath('/admin/integrations');
+  return { ok: 'Настройки сохранены' };
+}
+
+export async function testVk(
+  _prev: IntegrationState,
+  formData: FormData,
+): Promise<IntegrationState> {
+  await requireOwner();
+
+  const parsed = vkSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Проверьте поля' };
+
+  const previous = await loadVkConfig();
+  const config = {
+    token: parsed.data.token || previous.token,
+    peerId: parsed.data.peerId || previous.peerId,
+  };
+
+  const sent = await sendVkWith(config, 'Проверка связи. Так будут приходить заявки с сайта.');
+  return sent.ok
+    ? { ok: 'Сообщение отправлено — проверьте диалог с сообществом' }
     : { error: sent.reason ?? 'Не удалось отправить' };
 }

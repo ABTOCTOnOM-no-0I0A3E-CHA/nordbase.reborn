@@ -5,6 +5,10 @@ import type { Metadata } from 'next';
    ссылку на вход могут проставить откуда угодно. */
 export const metadata: Metadata = {
   robots: { index: false, follow: false, nocache: true },
+  /* Панель ставится на главный экран телефона как приложение — иначе iPhone
+     не отдаёт ей push-уведомления вовсе. */
+  manifest: '/manifest.webmanifest',
+  appleWebApp: { capable: true, title: 'Север', statusBarStyle: 'black-translucent' },
 };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

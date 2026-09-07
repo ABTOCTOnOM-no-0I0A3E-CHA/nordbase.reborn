@@ -36,8 +36,11 @@ git merge --ff-only origin/main
 $COMPOSE build app
 $COMPOSE up -d
 
-# Кеш сборки съедает по паре гигабайт на образ, а диск здесь 15 ГБ.
-docker image prune -f >/dev/null
-docker builder prune -f --filter until=72h >/dev/null
+# Кеш сборки съедает около четырёх гигабайт, а свободного места здесь единицы:
+# держим его в пределах двух гигабайт, иначе через пару деплоев сборка встанет
+# без места. Слои прошлых образов не нужны — работает только текущий.
+docker image prune -af >/dev/null
+docker builder prune -f --keep-storage 2GB >/dev/null 2>&1 ||
+  docker builder prune -f --filter until=24h >/dev/null
 
 log "развёрнуто: $(git rev-parse --short HEAD)"

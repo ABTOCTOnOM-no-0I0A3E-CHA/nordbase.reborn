@@ -1,10 +1,67 @@
 'use client';
 
 import Image from 'next/image';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { mediaUrl } from '@/lib/media-url';
+import { uploadOne } from '@/lib/admin/media-actions';
 
 export type MediaOption = { id: string; key: string; alt: string };
+
+/* Загрузка прямо из окна выбора. Раньше недостающую фотографию приходилось
+   нести в медиатеку в другой вкладке, а несохранённые правки блока при этом
+   терялись. Загруженное сразу попадает в список и выбирается. */
+function UploadButton({
+  label = 'Загрузить фото',
+  onUploaded,
+}: {
+  label?: string;
+  onUploaded: (media: MediaOption) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  async function send(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    setBusy(true);
+    setError('');
+
+    /* По одному: так частично удачная загрузка не теряется целиком, а
+       владелец видит каждую появившуюся картинку. */
+    for (const file of Array.from(files)) {
+      const data = new FormData();
+      data.set('file', file);
+      const result = await uploadOne(data);
+      if (result.media) onUploaded(result.media);
+      else if (result.error) setError(`${file.name}: ${result.error}`);
+    }
+
+    setBusy(false);
+    if (inputRef.current) inputRef.current.value = '';
+  }
+
+  return (
+    <>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        hidden
+        onChange={(event) => void send(event.target.files)}
+      />
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => inputRef.current?.click()}
+        className="border-aurora/50 text-aurora hover:bg-aurora/10 cursor-pointer rounded-full border px-3 py-1.5 text-[12.5px] font-semibold transition disabled:opacity-50"
+      >
+        {busy ? 'Загружаем…' : label}
+      </button>
+      {error ? <span className="text-busy text-[12px]">{error}</span> : null}
+    </>
+  );
+}
 
 function Thumb({ option, size = 44 }: { option: MediaOption; size?: number }) {
   return (
@@ -30,7 +87,10 @@ export function MediaPicker({
   onChange: (id: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const selected = options.find((o) => o.id === value);
+  /* Только что загруженные — впереди списка: их и искать не надо. */
+  const [fresh, setFresh] = useState<MediaOption[]>([]);
+  const all = [...fresh, ...options];
+  const selected = all.find((o) => o.id === value);
 
   return (
     <div>
@@ -45,6 +105,14 @@ export function MediaPicker({
         >
           {selected ? 'Заменить' : 'Выбрать фото'}
         </button>
+        <UploadButton
+          label={selected ? 'Загрузить новое' : 'Загрузить фото'}
+          onUploaded={(media) => {
+            setFresh((list) => [media, ...list]);
+            onChange(media.id);
+            setOpen(false);
+          }}
+        />
         {selected ? (
           <button
             type="button"
@@ -58,13 +126,13 @@ export function MediaPicker({
 
       {open ? (
         <div className="border-line bg-bg-2 mt-3 max-h-64 overflow-y-auto rounded-[10px] border p-2">
-          {options.length === 0 ? (
+          {all.length === 0 ? (
             <p className="text-ink-3 p-3 text-[13px]">
-              Медиатека пуста — загрузите фотографии в разделе «Медиатека».
+              Медиатека пуста — нажмите «Загрузить фото».
             </p>
           ) : (
             <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-              {options.map((option) => (
+              {all.map((option) => (
                 <button
                   key={option.id}
                   type="button"
@@ -98,8 +166,11 @@ export function MediaMultiPicker({
   options: MediaOption[];
   onChange: (ids: string[]) => void;
 }) {
+  const [fresh, setFresh] = useState<MediaOption[]>([]);
+  const all = [...fresh, ...options];
+
   const chosen = value
-    .map((id) => options.find((o) => o.id === id))
+    .map((id) => all.find((o) => o.id === id))
     .filter((o): o is MediaOption => Boolean(o));
 
   return (
@@ -160,12 +231,24 @@ export function MediaMultiPicker({
         </div>
       ) : null}
 
+      <div className="mb-2 flex flex-wrap items-center gap-3">
+        <UploadButton
+          label="Загрузить в галерею"
+          onUploaded={(media) => {
+            setFresh((list) => [media, ...list]);
+            /* Свежая фотография сразу встаёт в конец галереи: её за этим и
+               грузили, а порядок потом двигается стрелками. */
+            onChange([...value, media.id]);
+          }}
+        />
+      </div>
+
       <div className="border-line bg-bg-2 max-h-56 overflow-y-auto rounded-[10px] border p-2">
-        {options.length === 0 ? (
+        {all.length === 0 ? (
           <p className="text-ink-3 p-3 text-[13px]">Медиатека пуста.</p>
         ) : (
           <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
-            {options.map((option) => {
+            {all.map((option) => {
               const active = value.includes(option.id);
               return (
                 <button

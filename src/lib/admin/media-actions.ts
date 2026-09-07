@@ -14,6 +14,52 @@ const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/h
 
 export type UploadState = { uploaded: number; errors: string[] };
 
+/* Загрузка одного файла с возвратом самой записи. Нужна там, где фотографию
+   выбирают: владелец открыл блок, увидел, что нужного снимка нет, и грузит его
+   не выходя из редактора — уход в медиатеку означал бы потерю несохранённых
+   правок блока. */
+export type UploadedMedia = { id: string; key: string; alt: string };
+
+export async function uploadOne(
+  formData: FormData,
+): Promise<{ media?: UploadedMedia; error?: string }> {
+  await requireUser();
+
+  const file = formData.get('file');
+  if (!(file instanceof File) || file.size === 0) return { error: 'Файл не выбран' };
+  if (file.size > MAX_BYTES) return { error: 'Файл больше 20 МБ' };
+  if (file.type && !ALLOWED.includes(file.type)) return { error: 'Неподдерживаемый формат' };
+
+  const alt = String(formData.get('alt') ?? '').trim();
+
+  try {
+    const processed = await processImage(Buffer.from(await file.arrayBuffer()));
+    const key = buildKey(processed.extension);
+    await put(key, processed.body);
+
+    const [row] = await db
+      .insert(media)
+      .values({
+        key,
+        mime: processed.mime,
+        width: processed.width,
+        height: processed.height,
+        size: processed.size,
+        alt,
+        blurhash: processed.placeholder,
+      })
+      .returning({ id: media.id, key: media.key, alt: media.alt });
+
+    if (!row) return { error: 'Не удалось сохранить файл' };
+
+    revalidatePath('/admin/media');
+    revalidatePath('/', 'layout');
+    return { media: row };
+  } catch {
+    return { error: 'Не удалось обработать изображение' };
+  }
+}
+
 export async function uploadMedia(_prev: UploadState, formData: FormData): Promise<UploadState> {
   await requireUser();
 

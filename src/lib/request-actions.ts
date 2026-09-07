@@ -106,7 +106,11 @@ export async function submitRequest(
       { label: 'Баня', value: input.banya ? 'да' : '' },
       { label: 'Комментарий', value: input.comment },
       { label: 'Номер заявки', value: saved?.id.slice(0, 8) ?? '' },
-  ]);
+    ],
+    /* Нажатие на уведомление открывает не просто список, а эту заявку:
+       к ней прокрутит и подсветит по якорю. */
+    saved ? `/admin/requests#r-${saved.id}` : undefined,
+  );
 
   if (notified.failed.length > 0) {
     console.warn(

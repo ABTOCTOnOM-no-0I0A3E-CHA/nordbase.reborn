@@ -344,6 +344,27 @@ body {
   }
 }
 
+/* ---------- заявка, открытая из уведомления ----------
+   Нажали push — браузер сам прокручивает к карточке по якорю. Но между двумя
+   десятками похожих карточек нужную всё равно не найти глазами, поэтому она
+   подсвечивается кольцом. :target вместо скрипта: работает сразу при загрузке
+   страницы, до того как оживёт любой javascript. */
+[id^='r-']:target {
+  outline: 2px solid var(--color-aurora);
+  outline-offset: 3px;
+  scroll-margin-top: 90px;
+  animation: request-target 1.6s ease-out;
+}
+
+@keyframes request-target {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-aurora) 55%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 18px color-mix(in oklab, var(--color-aurora) 0%, transparent);
+  }
+}
+
 /* ---------- переход в режим правки ----------
    Форма стоит ниже календаря, и при клике по брони меняется только её
    содержимое — этого не видно. Один импульс по краю панели показывает, что
@@ -363,6 +384,7 @@ body {
 
 /* Гостю, который просил меньше движения, показываем всё сразу. */
 @media (prefers-reduced-motion: reduce) {
+  [id^='r-']:target,
   .edit-flash,
   .request-sending,
   .request-done,

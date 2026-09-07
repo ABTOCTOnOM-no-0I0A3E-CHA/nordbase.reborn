@@ -39,11 +39,17 @@ function short(fields: NotifyField[]): string {
     .join(' · ');
 }
 
-export async function notifyAll(title: string, fields: NotifyField[]): Promise<NotifyResult> {
+export async function notifyAll(
+  title: string,
+  fields: NotifyField[],
+  /* Куда открыть панель по нажатию на уведомление. По умолчанию — список
+     заявок; вызывающий передаёт адрес с якорем на конкретную. */
+  url?: string,
+): Promise<NotifyResult> {
   const [telegram, vk, push] = await Promise.all([
     sendTelegram(formatRequest(title, fields)),
     sendVk(plain(title, fields)),
-    sendPush(title, short(fields)),
+    sendPush(title, short(fields), url),
   ]);
 
   const delivered: string[] = [];

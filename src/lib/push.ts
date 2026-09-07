@@ -55,7 +55,11 @@ export async function loadPublicKey(): Promise<string> {
 
 export type PushResult = { ok: boolean; sent: number; reason?: string };
 
-export async function sendPush(title: string, body: string, url = '/admin/requests'): Promise<PushResult> {
+export async function sendPush(
+  title: string,
+  body: string,
+  url: string = '/admin/requests',
+): Promise<PushResult> {
   const devices = await db.select().from(pushSubscriptions);
   if (devices.length === 0) return { ok: false, sent: 0, reason: 'нет подключённых устройств' };
 

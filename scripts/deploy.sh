@@ -29,9 +29,20 @@ fi
 
 log "новая версия: $(git log --oneline -1 origin/main)"
 
+migrations_before=$(ls drizzle/*.sql 2>/dev/null | wc -l)
+
 # Только перемотка вперёд. Если на сервере оказались свои правки, деплой
 # обязан упасть и оставить их в покое, а не затирать историю.
 git merge --ff-only origin/main
+
+# Схему базы автоматически не трогаем: неудачная миграция на боевых данных
+# хуже, чем задержка. Но молчать об этом нельзя — код уже уехал и может
+# обращаться к таблице, которой ещё нет.
+migrations_after=$(ls drizzle/*.sql 2>/dev/null | wc -l)
+if [ "$migrations_after" -gt "$migrations_before" ]; then
+  log "ВНИМАНИЕ: приехали новые миграции ($migrations_before -> $migrations_after). Применить вручную:"
+  log "  docker compose -f docker-compose.prod.yml exec -T db psql -U nordbase -d nordbase -f - < drizzle/<файл>.sql"
+fi
 
 $COMPOSE build app
 $COMPOSE up -d

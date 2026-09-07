@@ -1,5 +1,12 @@
 # Боевой запуск на VPS: приложение, Postgres и Caddy с автоматическим TLS.
-# docker compose -f docker-compose.prod.yml up -d --build
+#
+#   docker compose -f docker-compose.prod.yml --profile tls up -d --build
+#
+# Если TLS и домен уже держит чужой прокси (nginx, Caddy на хосте, туннель),
+# профиль tls не нужен — Caddy отсюда не поднимется, а приложение слушает
+# APP_PORT на самом сервере:
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
 
 services:
   db:
@@ -34,9 +41,16 @@ services:
       TELEGRAM_PROXY_URL: ${TELEGRAM_PROXY_URL:-}
     volumes:
       - uploads:/app/public/uploads
+    # Порт нужен, когда TLS терминирует внешний прокси. По умолчанию слушаем
+    # только петлю: наружу сайт отдаёт прокси, а не сам контейнер.
+    ports:
+      - '${APP_PORT:-127.0.0.1:3000}:3000'
 
   caddy:
     image: caddy:2-alpine
+    # Поднимается только с --profile tls: на сервере, где домен уже висит на
+    # чужом прокси, второй претендент на 80/443 просто не даст запуститься.
+    profiles: ['tls']
     restart: unless-stopped
     depends_on:
       - app
@@ -44,7 +58,10 @@ services:
       - '80:80'
       - '443:443'
     environment:
-      SITE_DOMAIN: ${SITE_DOMAIN:?задайте SITE_DOMAIN, например nordbase.ru}
+      # Без домена Caddy слушает голый 80 и не пытается выписать сертификат:
+      # обязательная переменная здесь ломала бы запуск и без профиля tls,
+      # потому что compose разбирает все сервисы разом.
+      SITE_DOMAIN: ${SITE_DOMAIN:-:80}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       # тот же том, что и у приложения: Caddy раздаёт фото напрямую

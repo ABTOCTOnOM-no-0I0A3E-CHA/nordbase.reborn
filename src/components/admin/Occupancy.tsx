@@ -210,9 +210,12 @@ export function Occupancy({
   }, [bookings, firstIso, lastIso]);
 
   const todayDay = today.slice(0, 7) === firstIso.slice(0, 7) ? Number(today.slice(8, 10)) : null;
-  /* Ширина колонки с названием домика приходит из CSS: на телефоне 132px
-     съедали треть и без того узкой таблицы. */
-  const columns = `var(--occ-label) repeat(${total}, minmax(0, 1fr))`;
+  /* Обе ширины приходят из CSS. На телефоне колонка с названием домика ужата,
+     а у дня есть минимум: иначе тридцать колонок делят остаток экрана и
+     превращаются в полоски по девятнадцать пикселей — попасть пальцем в
+     нужный день нельзя. На большом экране минимум снят, и дни как раньше
+     растягиваются на всю ширину без прокрутки. */
+  const columns = `var(--occ-label) repeat(${total}, minmax(var(--occ-day), 1fr))`;
   const houseById = useMemo(
     () => new Map(houses.map((house) => [house.id, house.title])),
     [houses],
@@ -272,7 +275,7 @@ export function Occupancy({
       <p className="text-ink-3 mb-2 text-[12px] sm:hidden">Таблицу можно листать вбок →</p>
 
       <div className="border-line bg-bg-3 overflow-x-auto rounded-[16px] border">
-        <div className="occ min-w-[680px] p-3 sm:min-w-[760px] sm:p-4">
+        <div className="occ w-max min-w-full p-3 sm:p-4">
           {/* Числа месяца и дни недели */}
           <div className="mb-2 grid gap-px" style={{ gridTemplateColumns: columns }}>
             <span />
@@ -283,12 +286,12 @@ export function Occupancy({
               return (
                 <span
                   key={day}
-                  className={`text-center text-[10.5px] leading-tight ${
+                  className={`text-center text-[12px] leading-tight ${
                     isToday ? 'text-aurora font-bold' : weekend ? 'text-ink-3' : 'text-ink-2'
                   }`}
                 >
                   <span className="block">{day}</span>
-                  <span className="block text-[9px] opacity-70">
+                  <span className="block text-[10px] opacity-70">
                     {WEEKDAY_SHORT[weekday(view.year, view.month, day)]}
                   </span>
                 </span>
@@ -323,7 +326,7 @@ export function Occupancy({
                       <span
                         key={day}
                         style={{ gridRow: 1, gridColumn: day + 1 }}
-                        className={`h-9 rounded-[4px] ${weekend ? 'bg-ok/15' : 'bg-ok/8'} ${
+                        className={`h-10 rounded-[5px] ${weekend ? 'bg-ok/15' : 'bg-ok/8'} ${
                           todayDay === day ? 'ring-aurora/50 ring-1 ring-inset' : ''
                         }`}
                       />
@@ -345,7 +348,7 @@ export function Occupancy({
                       }
                       onBlur={() => setHint((v) => (v?.bar.id === bar.id ? null : v))}
                       style={{ gridColumn: `${bar.start + 1} / span ${bar.span}`, gridRow: 1 }}
-                      className={`z-10 flex h-9 cursor-pointer items-center overflow-hidden rounded-[5px] px-2 text-[11.5px] font-semibold whitespace-nowrap transition ${
+                      className={`z-10 flex h-10 cursor-pointer items-center overflow-hidden rounded-[6px] px-2 text-[12px] font-semibold whitespace-nowrap transition ${
                         bar.booking.status === 'confirmed' ? 'bg-busy text-bg' : 'bg-amber text-bg'
                       } ${
                         selectedId === bar.id
@@ -375,7 +378,7 @@ export function Occupancy({
                     <span
                       key={day}
                       title={free === 0 ? 'все домики заняты' : `свободно домиков: ${free}`}
-                      className={`flex h-6 items-center justify-center rounded-[4px] text-[11px] font-semibold ${
+                      className={`flex h-7 items-center justify-center rounded-[5px] text-[12px] font-semibold ${
                         free === 0
                           ? 'bg-busy text-bg'
                           : free === houses.length
@@ -410,7 +413,7 @@ export function Occupancy({
                           ? `${guests} чел. — за одну поездку вездеход столько не увезёт`
                           : `${guests} чел.`
                       }
-                      className={`flex h-6 items-center justify-center rounded-[4px] text-[11px] font-semibold ${
+                      className={`flex h-7 items-center justify-center rounded-[5px] text-[12px] font-semibold ${
                         guests === 0 ? 'text-ink-3' : over ? 'bg-busy text-bg' : 'bg-ice/20 text-ice'
                       }`}
                     >

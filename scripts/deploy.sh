@@ -6,6 +6,9 @@
 # открыт только SSH, репозиторий публичный, а значит не нужны ни принимающий
 # эндпоинт, ни ключ развёртывания в секретах GitHub — нечему утекать.
 
+# Журнал:  journalctl -u nordbase-deploy -n 50 --no-pager
+# Вручную: sudo systemctl start nordbase-deploy
+
 set -eu
 
 cd "$(dirname "$0")/.."

@@ -83,20 +83,18 @@ function Month({
   const lead = (new Date(Date.UTC(year, month, 1)).getUTCDay() + 6) % 7;
 
   return (
-    /* Ниже этой ширины числа в квадратиках начинают жаться друг к другу,
-       поэтому месяц не сжимаем, а даём прокрутить — см. обёртку ниже. */
-    <div className="min-w-[344px] flex-none">
+    <div>
       <b className="mb-3 block text-center text-[15px] font-semibold">
         {MONTHS[month]} {year}
       </b>
 
-      <div className="text-ink-3 mb-1.5 grid grid-cols-7 gap-1.5 text-center text-[11.5px]">
+      <div className="text-ink-3 mb-1 grid grid-cols-7 gap-1 text-center text-[11px]">
         {WEEKDAYS.map((day) => (
           <span key={day}>{day}</span>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-1.5">
+      <div className="grid grid-cols-7 gap-1">
         {Array.from({ length: lead }, (_, i) => (
           <span key={`lead-${i}`} />
         ))}
@@ -128,7 +126,7 @@ function Month({
                       ? 'свободны не все домики'
                       : 'свободно'
               }
-              className={`flex aspect-square items-center justify-center rounded-[10px] text-[15px] tabular-nums transition disabled:cursor-not-allowed ${
+              className={`flex h-9 items-center justify-center rounded-[8px] text-[13.5px] tabular-nums transition disabled:cursor-not-allowed ${
                 edge
                   ? 'bg-aurora text-aurora-ink font-semibold'
                   : inside
@@ -237,9 +235,9 @@ export function AvailabilityCalendar({
   }
 
   return (
-    /* Ширина подобрана под два месяца рядом: 344 + 344 + промежуток. Меньше —
-       и на большом экране появлялась бы прокрутка там, где всё помещается. */
-    <div className="border-line bg-bg-3 mx-auto max-w-[780px] rounded-[18px] border p-4 sm:p-6">
+    /* Календарь узкий и стоит по центру секции: растягивать таблицу месяца на
+       всю ширину страницы незачем. */
+    <div className="border-line bg-bg-3 mx-auto max-w-[680px] rounded-[18px] border p-4 sm:p-6">
       <div className="mb-4 flex items-center justify-between gap-3">
         <button
           type="button"
@@ -262,9 +260,7 @@ export function AvailabilityCalendar({
         </button>
       </div>
 
-      {/* Отрицательные поля с обратными отступами: полоса прокрутки идёт от
-          края до края карточки, а не внутри её паддингов. */}
-      <div className="-mx-4 flex gap-6 overflow-x-auto px-4 pb-1 sm:-mx-6 sm:px-6">
+      <div className={`grid gap-6 ${shown > 1 ? 'md:grid-cols-2' : ''}`}>
         {visible.map((item) => (
           <Month
             key={`${item.year}-${item.month}`}

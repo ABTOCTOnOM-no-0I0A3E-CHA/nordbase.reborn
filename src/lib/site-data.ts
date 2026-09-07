@@ -245,7 +245,18 @@ const settingsSchema = z.object({
 });
 
 export async function loadSettings(): Promise<SiteSettings> {
-  const rows = await db.select().from(settingsTable).where(eq(settingsTable.key, 'site')).limit(1);
+  let rows;
+  try {
+    rows = await db.select().from(settingsTable).where(eq(settingsTable.key, 'site')).limit(1);
+  } catch (cause) {
+    /* Настройки читает корневой layout, а его метаданные Next собирает и для
+       статических страниц вроде «не найдено» — во время сборки базы ещё нет.
+       Значения по умолчанию тут честнее, чем упавшая сборка: заголовок и
+       описание у нас и так имеют осмысленный запасной вариант. */
+    console.warn('Настройки недоступны, беру значения по умолчанию:', cause);
+    return DEFAULT_SETTINGS;
+  }
+
   const stored = rows[0]?.value;
   if (!stored || typeof stored !== 'object') return DEFAULT_SETTINGS;
 

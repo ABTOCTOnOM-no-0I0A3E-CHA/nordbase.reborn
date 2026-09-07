@@ -237,9 +237,9 @@ export function AvailabilityCalendar({
   }
 
   return (
-    /* Календарь узкий и стоит по центру секции: растягивать таблицу месяца на
-       всю ширину страницы незачем. */
-    <div className="border-line bg-bg-3 mx-auto max-w-[680px] rounded-[18px] border p-4 sm:p-6">
+    /* Ширина подобрана под два месяца рядом: 344 + 344 + промежуток. Меньше —
+       и на большом экране появлялась бы прокрутка там, где всё помещается. */
+    <div className="border-line bg-bg-3 mx-auto max-w-[780px] rounded-[18px] border p-4 sm:p-6">
       <div className="mb-4 flex items-center justify-between gap-3">
         <button
           type="button"

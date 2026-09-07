@@ -1,9 +1,18 @@
 'use client';
 
+import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useFormAction } from '@/lib/use-form-action';
 import { login, type LoginState } from './actions';
 
 const initial: LoginState = {};
+
+/* Адрес, куда вернуться после входа, приходит в параметре — например, когда
+   владелец нажал уведомление о заявке с уже слетевшей сессией. */
+function NextField() {
+  const next = useSearchParams().get('next') ?? '';
+  return <input type="hidden" name="next" value={next} />;
+}
 
 export default function LoginPage() {
   const { state, pending, onSubmit } = useFormAction(login, initial);
@@ -14,6 +23,9 @@ export default function LoginPage() {
         onSubmit={onSubmit}
         className="bg-bg-3 border-line w-full max-w-sm rounded-[18px] border p-8"
       >
+        <Suspense fallback={null}>
+          <NextField />
+        </Suspense>
         <p className="font-display text-aurora mb-6 text-xs tracking-[0.18em] uppercase">Nordbase</p>
         <h1 className="mb-6 text-2xl font-bold tracking-tight">Вход в админку</h1>
 

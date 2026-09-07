@@ -109,7 +109,7 @@ export async function submitRequest(
     ],
     /* Нажатие на уведомление открывает не просто список, а эту заявку:
        к ней прокрутит и подсветит по якорю. */
-    saved ? `/admin/requests#r-${saved.id}` : undefined,
+    saved ? `/admin/open/${saved.id}` : undefined,
   );
 
   if (notified.failed.length > 0) {

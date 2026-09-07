@@ -35,7 +35,14 @@ function formatDate(value: string | null): string {
   return `${day}.${month}.${year}`;
 }
 
-export default async function RequestsPage() {
+export default async function RequestsPage({
+  searchParams,
+}: {
+  /* Заявка, ради которой пришли из уведомления. Дублирует якорь: тот может
+     потеряться при возврате со страницы входа, параметр — нет. */
+  searchParams: Promise<{ open?: string }>;
+}) {
+  const { open } = await searchParams;
   const rows = await db
     .select({
       request: requests,
@@ -96,6 +103,8 @@ export default async function RequestsPage() {
                 /* Новая заявка не должна теряться в списке: толстая яркая
                    грань слева, заметно светлее фон и подсветка по краю. */
                 className={`relative overflow-hidden rounded-[16px] border transition ${
+                  open === request.id ? 'request-target ' : ''
+                }${
                   isNew
                     ? 'border-ice bg-ice/15 shadow-[0_0_0_1px_var(--color-ice)_inset,0_10px_30px_rgb(0_0_0/0.35)]'
                     : 'border-line bg-bg-3'

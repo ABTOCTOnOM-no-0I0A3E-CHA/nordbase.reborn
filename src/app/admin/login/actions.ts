@@ -14,6 +14,15 @@ const schema = z.object({
   password: z.string().min(8),
 });
 
+/* Куда вернуть после входа. Берём только свои внутренние адреса панели:
+   «//чужой-сайт» и «https://…» браузер считает внешними, и открытый редирект
+   со страницы входа — классический способ увести владельца на подделку. */
+function safeNext(value: unknown): string {
+  const path = typeof value === 'string' ? value : '';
+  if (!path.startsWith('/admin/') || path.startsWith('//')) return '/admin';
+  return path;
+}
+
 export type LoginState = { error?: string };
 
 /* Хеш несуществующего пароля. Считаем его, когда пользователя нет, чтобы
@@ -48,5 +57,6 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   if (!user || !ok) return { error: 'Неверная почта или пароль' };
 
   await createSession(user.id);
-  redirect('/admin');
+  /* Пришли по уведомлению о заявке — возвращаемся к ней, а не на главную. */
+  redirect(safeNext(formData.get('next')));
 }

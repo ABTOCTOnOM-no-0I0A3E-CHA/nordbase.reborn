@@ -1,5 +1,15 @@
 import { z } from 'zod';
 
+/* Незаполненная переменная в docker-compose приходит не как «нет значения», а
+   как пустая строка, и проверка URL на ней падает. Для необязательных адресов
+   пустая строка — это «не задано». */
+const optionalUrl = z
+  .string()
+  .trim()
+  .optional()
+  .transform((value) => (value === '' ? undefined : value))
+  .pipe(z.url().optional());
+
 /* Падаем на старте, а не в рантайме на первой заявке. */
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -11,9 +21,9 @@ const schema = z.object({
   TELEGRAM_BOT_TOKEN: z.string().optional(),
   TELEGRAM_CHAT_ID: z.string().optional(),
   /* Свой обратный прокси вместо api.telegram.org — для доступа из России. */
-  TELEGRAM_API_BASE: z.url().optional(),
+  TELEGRAM_API_BASE: optionalUrl,
   /* HTTP(S)-прокси с поддержкой CONNECT. SOCKS5 не поддерживается. */
-  TELEGRAM_PROXY_URL: z.url().optional(),
+  TELEGRAM_PROXY_URL: optionalUrl,
 
   S3_ENDPOINT: z.string().optional(),
   S3_REGION: z.string().optional(),

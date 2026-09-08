@@ -26,7 +26,10 @@ services:
     # Порт наружу не открываем: до базы достаточно доступа из сети compose.
 
   app:
-    build: .
+    build:
+      context: .
+      args:
+        SITE_NOINDEX: ${SITE_NOINDEX:-}
     restart: unless-stopped
     depends_on:
       db:

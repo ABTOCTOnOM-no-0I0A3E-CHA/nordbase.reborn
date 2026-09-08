@@ -19,6 +19,10 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV DATABASE_URL=postgres://build:build@127.0.0.1:5432/build
 ENV SITE_URL=http://localhost:3000
+# Заголовки ответа Next вычисляет при сборке, а не при запуске, поэтому запрет
+# индексации для временного домена должен быть известен уже здесь.
+ARG SITE_NOINDEX=""
+ENV SITE_NOINDEX=$SITE_NOINDEX
 RUN npm run build
 
 FROM node:22-alpine AS runner

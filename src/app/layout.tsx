@@ -4,6 +4,7 @@ import { loadSettings } from '@/lib/site-data';
 import { siteUrl } from '@/lib/site-url';
 import { mediaUrl } from '@/lib/media-url';
 import { mediaKey } from '@/lib/seo';
+import { env } from '@/env';
 
 /* Заголовок и описание по умолчанию правятся в админке, а не в коде. */
 export async function generateMetadata(): Promise<Metadata> {
@@ -44,11 +45,15 @@ export async function generateMetadata(): Promise<Metadata> {
       yandex: settings.yandexVerification || undefined,
       google: settings.googleVerification || undefined,
     },
-    robots: {
-      index: true,
-      follow: true,
-      googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 },
-    },
+    /* robots.txt — просьба, которую робот вправе не выполнить; мета-запрет
+       действует и на адреса, найденные по ссылкам со стороны. */
+    robots: env.SITE_NOINDEX
+      ? { index: false, follow: false, nocache: true }
+      : {
+          index: true,
+          follow: true,
+          googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 },
+        },
   };
 }
 

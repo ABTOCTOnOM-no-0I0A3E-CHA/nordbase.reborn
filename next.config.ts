@@ -4,6 +4,10 @@ import type { NextConfig } from 'next';
    remotePatterns остаётся пустым и next/image работает только с локальными файлами. */
 const publicMedia = process.env.S3_PUBLIC_URL;
 
+/* На закрытом стенде запрет вешаем и заголовком: мета-тег виден только в
+   HTML, а по ссылке могут утащить и картинку, и PDF. */
+const noindex = process.env.SITE_NOINDEX === '1' || process.env.SITE_NOINDEX === 'true';
+
 const config: NextConfig = {
   /* Standalone-сборка тащит в образ только нужные модули: итоговый слой
      в разы легче, чем весь node_modules. */
@@ -18,6 +22,15 @@ const config: NextConfig = {
        поэтому держим его настолько низким, насколько позволяет медиатека:
        один файл до 20 МБ плюс запас на кодирование. Пачку фото грузим партиями. */
     serverActions: { bodySizeLimit: '30mb' },
+  },
+  async headers() {
+    if (!noindex) return [];
+    return [
+      {
+        source: '/:path*',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+      },
+    ];
   },
   images: {
     formats: ['image/avif', 'image/webp'],

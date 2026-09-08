@@ -35,6 +35,7 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-nordbase}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-nordbase}
       SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-nb_session}
       SITE_URL: ${SITE_URL:?задайте SITE_URL, например https://nordbase.ru}
+      SITE_NOINDEX: ${SITE_NOINDEX:-}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
       TELEGRAM_API_BASE: ${TELEGRAM_API_BASE:-}

@@ -17,6 +17,13 @@ const schema = z.object({
   SESSION_COOKIE_NAME: z.string().min(1).default('nb_session'),
   /* Абсолютный адрес сайта для sitemap, robots и разметки JSON-LD. */
   SITE_URL: z.url().default('http://localhost:3000'),
+  /* Полный запрет индексации. Нужен демо-стенду: пока сайт живёт на временном
+     домене, он не должен попасть в поиск и конкурировать с боевым за те же
+     запросы. При переезде строка убирается из .env — и всё включается назад. */
+  SITE_NOINDEX: z
+    .string()
+    .optional()
+    .transform((value) => value === '1' || value?.toLowerCase() === 'true'),
 
   TELEGRAM_BOT_TOKEN: z.string().optional(),
   TELEGRAM_CHAT_ID: z.string().optional(),

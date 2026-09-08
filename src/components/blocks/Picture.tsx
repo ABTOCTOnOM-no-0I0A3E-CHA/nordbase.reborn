@@ -21,6 +21,7 @@ export function Picture({
   priority = false,
   ratio,
   fill = false,
+  quality,
 }: {
   media: MediaRecord | undefined;
   className?: string;
@@ -28,6 +29,8 @@ export function Picture({
   priority?: boolean;
   ratio?: string;
   fill?: boolean;
+  /* Допустимые значения перечислены в next.config: 62 и 75. */
+  quality?: 62 | 75;
 }) {
   if (!media) return <Empty className={className} ratio={ratio} />;
 
@@ -38,6 +41,7 @@ export function Picture({
     priority,
     placeholder: media.blurhash ? ('blur' as const) : ('empty' as const),
     blurDataURL: media.blurhash ?? undefined,
+    quality,
   };
 
   if (fill) return <Image {...common} fill className={className} />;

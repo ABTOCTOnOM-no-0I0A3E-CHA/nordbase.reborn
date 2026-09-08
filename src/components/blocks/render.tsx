@@ -43,6 +43,7 @@ function Hero({ block, data }: { block: Extract<Block, { type: 'hero' }>; data: 
             media={cover}
             fill
             priority
+            quality={62}
             sizes="100vw"
             className="scale-[1.06] object-cover brightness-[0.6] contrast-[1.12] saturate-[0.18]"
           />
@@ -170,7 +171,10 @@ function TextMedia({
       <div className={`relative ${mediaFirst ? 'md:order-1' : ''}`}>
         <Picture
           media={image}
-          sizes="(max-width: 768px) 100vw, 50vw"
+          /* Колонка ограничена шириной контента, поэтому выше 1280px картинке
+             больше 600px не нужно. С «50vw» браузер тянул под ширину экрана и
+             грузил вдвое больше пикселей, чем помещалось. */
+          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 600px"
           ratio="aspect-[4/3.1]"
           className="aspect-[4/3.1] w-full rounded-[16px] object-cover"
         />

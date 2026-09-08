@@ -8,6 +8,10 @@ export function JsonLd({ settings }: { settings: SiteSettings }) {
     '@context': 'https://schema.org',
     '@type': 'LodgingBusiness',
     name: settings.legalName,
+    /* Люди ищут это место разными словами: «база отдыха Рыбачий», «турбаза
+       Рыбачий». Синонимы в разметке помогают поисковику связать их с одной
+       организацией — в отличие от набивки теми же словами в текст. */
+    alternateName: ['Турбаза «Север» на Рыбачьем', 'База отдыха на полуострове Рыбачий'],
     description: settings.seoDescription,
     url: siteUrl(),
     telephone: settings.phone,
@@ -22,6 +26,13 @@ export function JsonLd({ settings }: { settings: SiteSettings }) {
       latitude: settings.lat,
       longitude: settings.lng,
     },
+    /* Где база работает и откуда забирает гостей: запрос «на Рыбачий из
+       Мурманска» встречается чаще, чем сам полуостров. */
+    areaServed: [
+      { '@type': 'Place', name: 'Полуостров Рыбачий' },
+      { '@type': 'Place', name: 'Мурманская область' },
+      { '@type': 'Place', name: 'Териберка' },
+    ],
     sameAs: [settings.vk, settings.telegram, settings.reviewsUrl].filter(Boolean),
     amenityFeature: [
       { '@type': 'LocationFeatureSpecification', name: 'Баня', value: true },

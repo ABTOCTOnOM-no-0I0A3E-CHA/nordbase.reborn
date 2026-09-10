@@ -147,6 +147,16 @@ export default async function RequestsPage({
                       </svg>
                       {request.phone}
                     </a>
+                    {/* Гость сам сказал, где ему удобнее отвечать — ведём туда,
+                        чтобы не переписывать ник в мессенджер руками. */}
+                    {request.contactKind !== 'phone' ? (
+                      <ContactButtons
+                        phone={request.phone}
+                        kind={request.contactKind}
+                        value={request.contactValue}
+                        size="small"
+                      />
+                    ) : null}
                     <span
                       className={`rounded-full px-2.5 py-1 text-[11.5px] font-semibold ${
                         STATUS_STYLE[request.status] ?? ''

@@ -1,8 +1,9 @@
-import { asc, gte } from 'drizzle-orm';
+import { asc, eq, gte } from 'drizzle-orm';
 import { db } from '@/db';
-import { bookings, houses } from '@/db/schema';
+import { bookings, houses, tourBookings, tours } from '@/db/schema';
 import { AdminHeading } from '@/components/admin/ui';
 import { BookingBoard } from '@/components/admin/BookingBoard';
+import { TourBookings } from '@/components/admin/TourBookings';
 import { todayIso } from '@/lib/dates';
 import { loadOccupancySettings } from '@/lib/occupancy-settings';
 
@@ -13,17 +14,27 @@ export default async function CalendarPage() {
   /* Показываем и прошлый месяц: календарь листается назад. */
   const from = `${today.slice(0, 8)}01`;
 
-  const [houseRows, bookingRows, occupancy] = await Promise.all([
+  const [houseRows, bookingRows, occupancy, tourRows, tourBookingRows] = await Promise.all([
     db.select().from(houses).orderBy(asc(houses.sort)),
     db.select().from(bookings).where(gte(bookings.dateTo, from)).orderBy(asc(bookings.dateFrom)),
     loadOccupancySettings(),
+    db
+      .select({ id: tours.id, title: tours.title })
+      .from(tours)
+      .where(eq(tours.status, 'published'))
+      .orderBy(asc(tours.sort)),
+    db
+      .select()
+      .from(tourBookings)
+      .where(gte(tourBookings.dateTo, from))
+      .orderBy(asc(tourBookings.dateFrom)),
   ]);
 
   return (
     <div>
       <AdminHeading
-        title="Занятость домиков"
-        description="Даты вы отмечаете сами — автоматически ничего не бронируется. Что отмечено здесь, то гость видит на сайте как занятое."
+        title="Занятость"
+        description="Домики и кемпы сверху, туры отдельно ниже. Даты вы отмечаете сами — автоматически ничего не бронируется."
       />
 
       <BookingBoard
@@ -46,6 +57,21 @@ export default async function CalendarPage() {
           note: booking.note,
           contactKind: booking.contactKind,
           contactValue: booking.contactValue,
+        }))}
+      />
+
+      <TourBookings
+        tours={tourRows}
+        seats={occupancy.seats}
+        today={today}
+        items={tourBookingRows.map((row) => ({
+          id: row.id,
+          tourId: row.tourId,
+          dateFrom: row.dateFrom,
+          dateTo: row.dateTo,
+          guests: row.guests,
+          status: row.status,
+          note: row.note,
         }))}
       />
     </div>

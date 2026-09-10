@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { and, eq, gt, lt, ne } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '@/db';
-import { bookings, requests, settings } from '@/db/schema';
+import { bookings, requests, settings, tourBookings } from '@/db/schema';
 import { requireUser } from '@/lib/auth/guard';
 
 export async function setRequestStatus(formData: FormData): Promise<void> {
@@ -220,5 +220,62 @@ export async function saveSeats(formData: FormData): Promise<void> {
     .values({ key: 'occupancy', value, updatedAt: new Date() })
     .onConflictDoUpdate({ target: settings.key, set: { value, updatedAt: new Date() } });
 
+  revalidatePath('/admin/calendar');
+}
+
+
+/* ------------------------------------------------------------- брони туров */
+
+/* Тур не занимает домик: группа может ночевать на базе, а может приехать
+   одним днём. Ограничение здесь другое — сколько человек увозит вездеход,
+   поэтому пересечения не запрещаем, а только считаем людей по дням. */
+const tourSchema = z
+  .object({
+    id: z.union([z.uuid(), z.literal('')]).default(''),
+    tourId: z.union([z.uuid(), z.literal('')]).default(''),
+    dateFrom: z.iso.date('Укажите дату начала'),
+    dateTo: z.iso.date('Укажите дату окончания'),
+    guests: z.coerce.number().int().min(1).max(60).default(1),
+    status: z.enum(['hold', 'confirmed', 'cancelled']),
+    note: z.string().trim().max(500).default(''),
+  })
+  .refine((v) => v.dateTo >= v.dateFrom, {
+    message: 'Окончание раньше начала',
+    path: ['dateTo'],
+  });
+
+export async function saveTourBooking(
+  _prev: BookingState,
+  formData: FormData,
+): Promise<BookingState> {
+  await requireUser();
+
+  const parsed = tourSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Проверьте поля' };
+
+  const input = parsed.data;
+  const values = {
+    tourId: input.tourId || null,
+    dateFrom: input.dateFrom,
+    dateTo: input.dateTo,
+    guests: input.guests,
+    status: input.status,
+    note: input.note,
+  };
+
+  if (input.id) {
+    await db.update(tourBookings).set(values).where(eq(tourBookings.id, input.id));
+  } else {
+    await db.insert(tourBookings).values(values);
+  }
+
+  revalidatePath('/admin/calendar');
+  revalidatePath('/admin');
+  return { ok: true };
+}
+
+export async function deleteTourBooking(formData: FormData): Promise<void> {
+  await requireUser();
+  await db.delete(tourBookings).where(eq(tourBookings.id, z.uuid().parse(formData.get('id'))));
   revalidatePath('/admin/calendar');
 }

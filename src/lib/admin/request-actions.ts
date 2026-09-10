@@ -149,12 +149,71 @@ export async function deleteBooking(formData: FormData): Promise<void> {
   revalidatePath('/', 'layout');
 }
 
+/* Заявка → бронь одним нажатием.
+
+   Раньше владелец, договорившись с гостем, переписывал даты и имя в форму
+   занятости руками. Теперь заявка переносится целиком: домик, даты, гости,
+   контакт. Заявка при этом помечается подтверждённой — она своё отработала. */
+export async function bookFromRequest(formData: FormData): Promise<void> {
+  await requireUser();
+
+  const id = z.uuid().parse(formData.get('id'));
+  const rows = await db.select().from(requests).where(eq(requests.id, id)).limit(1);
+  const request = rows[0];
+  if (!request) throw new Error('Заявка не найдена');
+
+  if (!request.houseId) throw new Error('В заявке не выбран домик — впишите бронь вручную');
+  if (!request.dateFrom || !request.dateTo) throw new Error('В заявке нет дат — впишите вручную');
+
+  const values = {
+    houseId: request.houseId,
+    requestId: request.id,
+    dateFrom: request.dateFrom,
+    dateTo: request.dateTo,
+    guests: request.guests,
+    status: 'hold' as const,
+    /* Имя и телефон в заметке: в шахматке видно, кто едет, без перехода
+       в заявки. */
+    note: `${request.name}, ${request.phone}`,
+    contactKind: request.contactKind,
+    contactValue: request.contactValue,
+  };
+
+  try {
+    await db.transaction(async (tx) => {
+      const clash = await tx
+        .select({ id: bookings.id })
+        .from(bookings)
+        .where(overlaps(values.houseId, values.dateFrom, values.dateTo))
+        .limit(1);
+
+      if (clash.length > 0) throw new Error('OVERLAP');
+
+      await tx.insert(bookings).values(values);
+      await tx.update(requests).set({ status: 'confirmed' }).where(eq(requests.id, id));
+    });
+  } catch (cause) {
+    const message = cause instanceof Error ? cause.message : '';
+    if (message === 'OVERLAP' || message.includes('bookings_no_overlap')) {
+      throw new Error('На эти даты домик уже занят — проверьте занятость');
+    }
+    throw cause;
+  }
+
+  revalidatePath('/admin/requests');
+  revalidatePath('/admin/calendar');
+  revalidatePath('/admin');
+  revalidatePath('/', 'layout');
+}
+
 /* Вместимость заезда живёт отдельной строкой настроек — см. lib/occupancy-settings. */
 export async function saveSeats(formData: FormData): Promise<void> {
   await requireUser();
 
   const seats = z.coerce.number().int().min(0).max(200).parse(formData.get('seats'));
-  const value = { seats };
+  const prepayPercent = z.coerce.number().int().min(0).max(100).parse(formData.get('prepayPercent'));
+  const mealsPrice = z.coerce.number().int().min(0).max(100000).parse(formData.get('mealsPrice'));
+  const value = { seats, prepayPercent, mealsPrice };
 
   await db
     .insert(settings)

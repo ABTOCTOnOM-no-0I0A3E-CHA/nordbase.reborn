@@ -25,7 +25,7 @@ export function BookingForm({
   booking,
   onDone,
 }: {
-  houses: { id: string; title: string }[];
+  houses: { id: string; title: string; capacity: number; minGuests: number }[];
   /* Задана — правим существующую бронь, пусто — заводим новую. */
   booking?: BookingDraft | null;
   onDone?: () => void;
@@ -55,7 +55,13 @@ export function BookingForm({
           required
           defaultValue={booking?.houseId}
           placeholder="Выберите домик"
-          options={houses.map((house) => ({ value: house.id, label: house.title }))}
+          options={houses.map((house) => ({
+            value: house.id,
+            label:
+              house.minGuests > 1
+                ? `${house.title} · до ${house.capacity} мест, от ${house.minGuests}`
+                : `${house.title} · до ${house.capacity} мест`,
+          }))}
         />
       </Field>
 

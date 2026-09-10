@@ -139,15 +139,27 @@ export async function loadBlockData(blocks: Block[]): Promise<BlockData> {
 
 /* Списки для формы заявки. Если блоки «Домики» и «Туры» на странице уже есть,
    переиспользуем загруженное, иначе идём в БД — лишнего запроса не будет. */
+export type StayOption = Pick<
+  HouseRecord,
+  'id' | 'title' | 'capacity' | 'minGuests' | 'pricePerNight' | 'kind'
+>;
+
 export async function loadRequestFormOptions(data: BlockData): Promise<{
-  houses: { id: string; title: string }[];
+  houses: StayOption[];
   tours: { id: string; title: string }[];
 }> {
   const [houseRows, tourRows] = await Promise.all([
     data.houses.length > 0
       ? data.houses
       : db
-          .select({ id: housesTable.id, title: housesTable.title })
+          .select({
+            id: housesTable.id,
+            title: housesTable.title,
+            capacity: housesTable.capacity,
+            minGuests: housesTable.minGuests,
+            pricePerNight: housesTable.pricePerNight,
+            kind: housesTable.kind,
+          })
           .from(housesTable)
           .where(eq(housesTable.status, 'published'))
           .orderBy(asc(housesTable.sort)),
@@ -161,7 +173,14 @@ export async function loadRequestFormOptions(data: BlockData): Promise<{
   ]);
 
   return {
-    houses: houseRows.map((h) => ({ id: h.id, title: h.title })),
+    houses: houseRows.map((h) => ({
+      id: h.id,
+      title: h.title,
+      capacity: h.capacity,
+      minGuests: h.minGuests,
+      pricePerNight: h.pricePerNight,
+      kind: h.kind,
+    })),
     tours: tourRows.map((t) => ({ id: t.id, title: t.title })),
   };
 }

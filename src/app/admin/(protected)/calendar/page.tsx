@@ -29,7 +29,13 @@ export default async function CalendarPage() {
       <BookingBoard
         today={today}
         vehicleCapacity={occupancy.seats}
-        houses={houseRows.map((house) => ({ id: house.id, title: house.title }))}
+        houses={houseRows.map((house) => ({
+          id: house.id,
+          title: house.title,
+          capacity: house.capacity,
+          minGuests: house.minGuests,
+          kind: house.kind,
+        }))}
         bookings={bookingRows.map((booking) => ({
           id: booking.id,
           houseId: booking.houseId,
@@ -38,6 +44,8 @@ export default async function CalendarPage() {
           guests: booking.guests,
           status: booking.status,
           note: booking.note,
+          contactKind: booking.contactKind,
+          contactValue: booking.contactValue,
         }))}
       />
     </div>

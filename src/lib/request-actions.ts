@@ -26,6 +26,9 @@ const schema = z
     banya: z.coerce.boolean().default(false),
     name: z.string().trim().min(2, 'Как к вам обращаться?').max(120),
     phone,
+    /* Куда гостю удобнее ответить и его ник или номер там. */
+    contactKind: z.enum(['phone', 'telegram', 'whatsapp', 'max']).default('phone'),
+    contactValue: z.string().trim().max(120).default(''),
     comment: z.string().trim().max(2000).default(''),
     consent: z.literal('on', { message: 'Нужно согласие на обработку данных' }),
   })
@@ -68,6 +71,8 @@ export async function submitRequest(
       banya: input.banya,
       name: input.name,
       phone: input.phone,
+      contactKind: input.contactKind,
+      contactValue: input.contactValue,
       comment: input.comment,
       /* 152-ФЗ: фиксируем момент согласия вместе с самой заявкой */
       consentAt: new Date(),
@@ -104,6 +109,13 @@ export async function submitRequest(
       { label: 'Гостей', value: String(input.guests) },
       { label: 'Питание', value: input.meals ? 'да' : '' },
       { label: 'Баня', value: input.banya ? 'да' : '' },
+      {
+        label: 'Связь',
+        value:
+          input.contactKind === 'phone'
+            ? 'по телефону'
+            : `${input.contactKind}: ${input.contactValue || input.phone}`,
+      },
       { label: 'Комментарий', value: input.comment },
       { label: 'Номер заявки', value: saved?.id.slice(0, 8) ?? '' },
     ],

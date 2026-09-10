@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Block } from '@/lib/blocks';
 import { loadRequestFormOptions, type BlockData } from '@/lib/site-data';
 import { loadBusyDates } from '@/lib/occupancy';
+import { loadOccupancySettings } from '@/lib/occupancy-settings';
 import { AvailabilityCalendar } from '@/components/site/AvailabilityCalendar';
 import { todayIso } from '@/lib/dates';
 import { loadSettings } from '@/lib/site-data';
@@ -468,10 +469,11 @@ async function RequestFormSection({
   block: Extract<Block, { type: 'requestForm' }>;
   data: BlockData;
 }) {
-  const [{ houses, tours }, busyByHouse, settings] = await Promise.all([
+  const [{ houses, tours }, busyByHouse, settings, occupancy] = await Promise.all([
     loadRequestFormOptions(data),
     loadBusyDates(),
     loadSettings(),
+    loadOccupancySettings(),
   ]);
 
   return (
@@ -486,6 +488,8 @@ async function RequestFormSection({
         submitLabel={settings.ctaLabel}
         telegram={settings.telegram}
         whatsapp={settings.whatsapp}
+        mealsPrice={occupancy.mealsPrice}
+        prepayPercent={occupancy.prepayPercent}
       />
     </>
   );

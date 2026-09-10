@@ -4,7 +4,13 @@ import { houses, requests, tours } from '@/db/schema';
 import { AdminHeading, EmptyState, Panel, Select, Submit } from '@/components/admin/ui';
 import { ActionForm } from '@/components/admin/ActionForm';
 import { Icon } from '@/components/admin/icons';
-import { deleteRequest, duplicateRequest, setRequestStatus } from '@/lib/admin/request-actions';
+import {
+  bookFromRequest,
+  deleteRequest,
+  duplicateRequest,
+  setRequestStatus,
+} from '@/lib/admin/request-actions';
+import { ContactButtons } from '@/components/admin/ContactButtons';
 
 export const metadata = { title: 'Заявки' };
 
@@ -206,6 +212,23 @@ export default async function RequestsPage({
                       </span>
                       <Submit variant="ghost">Обновить</Submit>
                     </ActionForm>
+
+                    {request.houseId && request.dateFrom && request.dateTo ? (
+                      <ActionForm
+                        action={bookFromRequest}
+                        success="Даты отмечены в занятости"
+                        confirm="Перенести заявку в занятость? Даты станут занятыми на сайте."
+                      >
+                        <input type="hidden" name="id" value={request.id} />
+                        <button
+                          type="submit"
+                          title="Создать бронь по этой заявке"
+                          className="bg-aurora text-aurora-ink hover:bg-aurora-hi cursor-pointer rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition"
+                        >
+                          В занятость
+                        </button>
+                      </ActionForm>
+                    ) : null}
 
                     <ActionForm action={duplicateRequest} success="Создана копия заявки">
                       <input type="hidden" name="id" value={request.id} />

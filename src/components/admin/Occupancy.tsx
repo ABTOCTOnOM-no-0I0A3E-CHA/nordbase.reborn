@@ -29,7 +29,13 @@ const MONTHS = [
 
 const WEEKDAY_SHORT = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
 
-export type House = { id: string; title: string };
+export type House = {
+  id: string;
+  title: string;
+  capacity: number;
+  minGuests: number;
+  kind: 'house' | 'camp';
+};
 export type Booking = {
   id: string;
   houseId: string;
@@ -38,6 +44,8 @@ export type Booking = {
   guests: number;
   status: 'hold' | 'confirmed' | 'cancelled';
   note: string;
+  contactKind: 'phone' | 'telegram' | 'whatsapp' | 'max';
+  contactValue: string;
 };
 
 type Bar = { id: string; start: number; span: number; booking: Booking };
@@ -314,8 +322,14 @@ export function Occupancy({
                   <span
                     className="text-ink truncate pr-3 text-[13px] font-semibold"
                     style={{ gridRow: 1, gridColumn: 1 }}
+                    title={`${house.title} · ${house.capacity} мест${
+                      house.minGuests > 1 ? `, от ${house.minGuests}` : ''
+                    }`}
                   >
                     {house.title}
+                    {/* Вместимость рядом с названием: владелец подбирает объект
+                        под компанию, не сверяясь со списком домиков. */}
+                    <span className="text-ink-3 ml-1.5 font-normal">· {house.capacity}</span>
                   </span>
 
                   {/* Подложка: свободные дни */}
@@ -370,7 +384,7 @@ export function Occupancy({
           {houses.length > 0 ? (
             <div className="border-line mt-3 border-t pt-3">
               <div className="grid items-center gap-px" style={{ gridTemplateColumns: columns }}>
-                <span className="text-ink-3 pr-3 text-[12px]">Свободно домиков</span>
+                <span className="text-ink-3 pr-3 text-[12px]">Свободно объектов</span>
                 {Array.from({ length: total }, (_, i) => {
                   const day = i + 1;
                   const free = houses.length - (busyHouses.get(day)?.size ?? 0);
@@ -399,7 +413,7 @@ export function Occupancy({
                 {/* Ноль мест — владелец следит только за домиками: тогда людей
                     по-прежнему показываем, но ни с чем не сравниваем. */}
                 <span className="text-ink-3 pr-3 text-[12px]">
-                  {vehicleCapacity > 0 ? `Гостей · увозим до ${vehicleCapacity}` : 'Гостей'}
+                  {vehicleCapacity > 0 ? `Гостей · в тур до ${vehicleCapacity}` : 'Гостей'}
                 </span>
                 {Array.from({ length: total }, (_, i) => {
                   const day = i + 1;

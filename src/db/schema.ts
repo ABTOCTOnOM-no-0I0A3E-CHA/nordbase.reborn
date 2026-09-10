@@ -23,6 +23,12 @@ export const requestStatusEnum = pgEnum('request_status', [
   'cancelled',
 ]);
 export const bookingStatusEnum = pgEnum('booking_status', ['hold', 'confirmed', 'cancelled']);
+/* Домик и кемп живут в одной таблице: у них одинаковая механика занятости и
+   разные только цена, вместимость и описание. Заводить вторую сущность ради
+   этого — плодить одинаковый код. */
+export const stayKindEnum = pgEnum('stay_kind', ['house', 'camp']);
+/* Куда писать гостю. Телефон есть всегда, остальное — по желанию гостя. */
+export const contactKindEnum = pgEnum('contact_kind', ['phone', 'telegram', 'whatsapp', 'max']);
 
 /* Тело страницы, домика, тура и сезона — один и тот же блочный формат.
    Разбирается через z.discriminatedUnion в lib/blocks, поэтому здесь просто jsonb. */
@@ -115,6 +121,11 @@ export const houses = pgTable(
     title: text('title').notNull(),
     summary: text('summary').notNull().default(''),
     capacity: integer('capacity').notNull().default(4),
+    /* Дом 1 сдаётся только от пяти человек — меньшей компании его не отдают.
+       Гость должен видеть это до отправки заявки, а не узнавать в ответе. */
+    minGuests: integer('min_guests').notNull().default(1),
+    kind: stayKindEnum('kind').notNull().default('house'),
+    /* Цена за одного человека в сутки, а не за объект целиком. */
     pricePerNight: integer('price_per_night'),
     coverId: uuid('cover_id').references(() => media.id, { onDelete: 'set null' }),
     body: body(),
@@ -264,6 +275,10 @@ export const requests = pgTable(
     banya: boolean('banya').notNull().default(false),
     name: text('name').notNull(),
     phone: text('phone').notNull(),
+    /* Как гостю удобнее общаться и его ник или номер в этом мессенджере:
+       звонок берут не все, а в переписке отвечают охотнее. */
+    contactKind: contactKindEnum('contact_kind').notNull().default('phone'),
+    contactValue: text('contact_value').notNull().default(''),
     comment: text('comment').notNull().default(''),
     status: requestStatusEnum('status').notNull().default('new'),
     /* 152-ФЗ: фиксируем факт и момент согласия на обработку персональных данных. */
@@ -314,6 +329,30 @@ export const bookings = pgTable(
     guests: integer('guests').notNull().default(0),
     status: bookingStatusEnum('status').notNull().default('hold'),
     note: text('note').notNull().default(''),
+    /* Контакт переезжает сюда из заявки — из занятости владелец звонит или
+       пишет гостю, не возвращаясь в список заявок. */
+    contactKind: contactKindEnum('contact_kind').notNull().default('phone'),
+    contactValue: text('contact_value').notNull().default(''),
   },
   (t) => [index('bookings_house_range_idx').on(t.houseId, t.dateFrom, t.dateTo)],
+);
+
+/* Брони туров — отдельно от размещения. Тур не занимает домик: группа может
+   жить на базе, а может приехать одним днём. Ограничение здесь другое —
+   вездеход увозит не больше четырёх человек в день. */
+export const tourBookings = pgTable(
+  'tour_bookings',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tourId: uuid('tour_id').references(() => tours.id, { onDelete: 'set null' }),
+    requestId: uuid('request_id').references(() => requests.id, { onDelete: 'set null' }),
+    dateFrom: date('date_from').notNull(),
+    dateTo: date('date_to').notNull(),
+    guests: integer('guests').notNull().default(1),
+    status: bookingStatusEnum('status').notNull().default('hold'),
+    note: text('note').notNull().default(''),
+    contactKind: contactKindEnum('contact_kind').notNull().default('phone'),
+    contactValue: text('contact_value').notNull().default(''),
+  },
+  (t) => [index('tour_bookings_range_idx').on(t.dateFrom, t.dateTo)],
 );

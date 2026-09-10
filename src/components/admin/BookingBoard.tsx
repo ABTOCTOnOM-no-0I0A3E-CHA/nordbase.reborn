@@ -7,6 +7,7 @@ import { ActionForm } from './ActionForm';
 import { Occupancy, type Booking, type House } from './Occupancy';
 import { BookingForm } from './BookingForm';
 import { deleteBooking, saveSeats } from '@/lib/admin/request-actions';
+import { ContactButtons } from './ContactButtons';
 
 /* Шахматка, форма и список — один экран с общим выбором: клик по полосе в
    календаре открывает эту бронь в форме, а не заставляет искать её глазами
@@ -71,7 +72,7 @@ export function BookingBoard({
         <ActionForm action={saveSeats} success="Вместимость сохранена" className="flex items-end gap-3">
           <span>
             <span className="text-ink mb-1.5 block text-[13px] font-semibold">
-              Сколько человек увозите за день
+              Сколько человек берёте в тур за день
             </span>
             <span className="block w-[160px]">
               <NumberField name="seats" defaultValue={vehicleCapacity} min={0} max={200} suffix="чел." />
@@ -81,8 +82,8 @@ export function BookingBoard({
         </ActionForm>
 
         <p className="text-ink-3 max-w-[46ch] text-[12.5px] leading-[1.45]">
-          Вездеход берёт восемь человек за поездку. Делаете два рейса — поставьте шестнадцать.
-          Ноль — не считать людей, следить только за домиками.
+          Вездеход берёт четверых за поездку. Делаете два рейса — поставьте восемь. Ноль — не
+          считать людей, следить только за объектами.
         </p>
       </div>
 
@@ -181,6 +182,14 @@ export function BookingBoard({
                     <span className="text-ink-3">{booking.guests} чел.</span>
                   ) : null}
                   {booking.note ? <span className="text-ink-3">{booking.note}</span> : null}
+                  {booking.contactValue || /^[+\d]/.test(booking.note) ? (
+                    <ContactButtons
+                      phone={booking.note.match(/[+\d][\d\s()-]{9,}/)?.[0] ?? ''}
+                      kind={booking.contactKind}
+                      value={booking.contactValue}
+                      size="small"
+                    />
+                  ) : null}
 
                   <span
                     className={`rounded-full px-2.5 py-1 text-[11.5px] font-semibold ${

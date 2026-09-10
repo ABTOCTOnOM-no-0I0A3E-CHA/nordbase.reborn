@@ -8,6 +8,8 @@ import { DateField } from '@/components/form/DateField';
 import { RequestSuccess } from './RequestSuccess';
 import { usePickedDates } from './PickedDates';
 import { submitRequest, type RequestState } from '@/lib/request-actions';
+import { PriceSummary } from './PriceSummary';
+import { CONTACT_HINTS, CONTACT_OPTIONS, type ContactKind } from '@/lib/contact';
 import type { HouseRecord, TourRecord } from '@/lib/site-data';
 
 const initial: RequestState = { ok: false };
@@ -38,8 +40,10 @@ export function RequestForm({
   submitLabel,
   telegram,
   whatsapp,
+  mealsPrice,
+  prepayPercent,
 }: {
-  houses: Pick<HouseRecord, 'id' | 'title'>[];
+  houses: Pick<HouseRecord, 'id' | 'title' | 'capacity' | 'minGuests' | 'pricePerNight' | 'kind'>[];
   tours: Pick<TourRecord, 'id' | 'title'>[];
   busyByHouse?: Record<string, string[]>;
   /* Варианты «Куда едете» и надпись на кнопке правятся в настройках сайта. */
@@ -51,6 +55,9 @@ export function RequestForm({
   /* «Сегодня» считает сервер по часовому поясу базы: у гостя в браузере
      может стоять любая зона, и минимальная дата уехала бы на сутки. */
   today: string;
+  /* Цена питания за человека в день и размер предоплаты — из настроек. */
+  mealsPrice: number;
+  prepayPercent: number;
 }) {
   const wrapRef = useRef<HTMLFormElement>(null);
   /* Высоту формы запоминаем до того, как она исчезнет: карточка «отправлено»
@@ -79,6 +86,9 @@ export function RequestForm({
   const [houseId, setHouseId] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [meals, setMeals] = useState(false);
+  const [banya, setBanya] = useState(false);
+  const [contactKind, setContactKind] = useState<ContactKind>('phone');
 
   /* Даты, выбранные в календаре занятости выше: гость кликает по числам, а
      заполняются эти поля — иначе выбор в календаре ничего бы не делал. */
@@ -90,6 +100,12 @@ export function RequestForm({
     setDateFrom(range?.from ?? '');
     setDateTo(range?.to ?? '');
   }, [range]);
+
+  const stay = houses.find((house) => house.id === houseId) ?? null;
+  /* Дом 1 сдают только от пяти человек. Сказать об этом надо до отправки,
+     иначе гость узнает отказ уже в ответном звонке. */
+  const belowMin = stay ? guests < stay.minGuests : false;
+  const overCapacity = stay ? guests > stay.capacity : false;
 
   /* Предупреждаем сразу, а не после отправки: занятые даты видны гостю,
      и он не тратит время на заявку, которую всё равно придётся переносить. */
@@ -165,9 +181,24 @@ export function RequestForm({
             placeholder="Не выбран"
             options={[
               { value: '', label: 'Не выбран' },
-              ...houses.map((house) => ({ value: house.id, label: house.title })),
+              ...houses.map((house) => ({
+                value: house.id,
+                /* Вместимость и минимум прямо в строке: гость выбирает домик
+                   под свою компанию, а не наугад. */
+                label:
+                  house.minGuests > 1
+                    ? `${house.title} · до ${house.capacity} мест, от ${house.minGuests}`
+                    : `${house.title} · до ${house.capacity} мест`,
+              })),
             ]}
           />
+          {stay ? (
+            <p className="text-ink-3 mt-2 text-[12.5px]">
+              {stay.pricePerNight
+                ? `${stay.pricePerNight.toLocaleString('ru-RU')} ₽ с человека в сутки`
+                : 'Цену подскажем в ответе'}
+            </p>
+          ) : null}
         </div>
       ) : null}
 
@@ -181,6 +212,7 @@ export function RequestForm({
           min={today}
           value={dateFrom}
           onChange={setDateFrom}
+          busy={busy}
         />
       </div>
 
@@ -194,8 +226,21 @@ export function RequestForm({
           min={dateFrom || today}
           value={dateTo}
           onChange={setDateTo}
+          busy={busy}
         />
       </div>
+
+      {belowMin ? (
+        <p className="text-amber bg-amber/10 rounded-[10px] px-4 py-3 text-[13.5px] md:col-span-2">
+          {stay?.title} сдаётся от {stay?.minGuests} человек. Выберите домик поменьше или укажите
+          больше гостей — заявку можно оставить в любом случае, обсудим.
+        </p>
+      ) : overCapacity ? (
+        <p className="text-amber bg-amber/10 rounded-[10px] px-4 py-3 text-[13.5px] md:col-span-2">
+          В {stay?.title} помещается {stay?.capacity} человек. На большую компанию возьмём два
+          объекта — напишите об этом в комментарии.
+        </p>
+      ) : null}
 
       {clash.length > 0 ? (
         <p className="text-busy bg-busy/10 rounded-[10px] px-4 py-3 text-[13.5px] md:col-span-2">
@@ -235,12 +280,37 @@ export function RequestForm({
         <input type="hidden" name="guests" value={guests} />
       </div>
 
-      <div className="flex items-end gap-6 pb-3">
-        <label className="text-ink-2 flex cursor-pointer items-center gap-2 text-[14.5px]">
-          <input type="checkbox" name="meals" className="check" /> Питание
+      {/* Обе услуги платные, и это должно быть видно до отправки заявки. */}
+      <div className="grid content-end gap-2 pb-1">
+        <label className="text-ink-2 flex cursor-pointer items-start gap-2 text-[14.5px]">
+          <input
+            type="checkbox"
+            name="meals"
+            className="check mt-0.5"
+            checked={meals}
+            onChange={(event) => setMeals(event.target.checked)}
+          />
+          <span>
+            Питание
+            <span className="text-ink-3 block text-[12.5px]">
+              {mealsPrice.toLocaleString('ru-RU')} ₽ с человека в день, по предзаказу
+            </span>
+          </span>
         </label>
-        <label className="text-ink-2 flex cursor-pointer items-center gap-2 text-[14.5px]">
-          <input type="checkbox" name="banya" className="check" /> Баня
+        <label className="text-ink-2 flex cursor-pointer items-start gap-2 text-[14.5px]">
+          <input
+            type="checkbox"
+            name="banya"
+            className="check mt-0.5"
+            checked={banya}
+            onChange={(event) => setBanya(event.target.checked)}
+          />
+          <span>
+            Баня
+            <span className="text-ink-3 block text-[12.5px]">
+              платно, стоимость и время обсуждаем на месте
+            </span>
+          </span>
         </label>
       </div>
 
@@ -276,11 +346,62 @@ export function RequestForm({
         />
       </div>
 
+      <div>
+        <label className={label} htmlFor="contactKind">
+          Как удобнее связаться
+        </label>
+        <Dropdown
+          id="contactKind"
+          name="contactKind"
+          value={contactKind}
+          onChange={(value) => setContactKind(value as ContactKind)}
+          options={CONTACT_OPTIONS}
+        />
+      </div>
+
+      {contactKind !== 'phone' ? (
+        <div>
+          <label className={label} htmlFor="contactValue">
+            Ник или номер в {CONTACT_OPTIONS.find((o) => o.value === contactKind)?.label}
+          </label>
+          <input
+            id="contactValue"
+            name="contactValue"
+            className={field}
+            placeholder={CONTACT_HINTS[contactKind]}
+            autoComplete="off"
+          />
+        </div>
+      ) : (
+        <input type="hidden" name="contactValue" value="" />
+      )}
+
       <div className="md:col-span-2">
         <label className={label} htmlFor="comment">
           Комментарий
         </label>
         <textarea id="comment" name="comment" rows={3} className={`${field} resize-y`} />
+      </div>
+
+      <div className="md:col-span-2">
+        <PriceSummary
+          stay={
+            stay
+              ? {
+                  title: stay.title,
+                  pricePerNight: stay.pricePerNight,
+                  minGuests: stay.minGuests,
+                  capacity: stay.capacity,
+                }
+              : null
+          }
+          guests={guests}
+          nights={wanted.length}
+          meals={meals}
+          banya={banya}
+          mealsPrice={mealsPrice}
+          prepayPercent={prepayPercent}
+        />
       </div>
 
       <label className="text-ink-3 flex cursor-pointer items-start gap-3 text-[13px] md:col-span-2">

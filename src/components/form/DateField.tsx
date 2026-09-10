@@ -74,6 +74,7 @@ export function DateField({
   max,
   id,
   required,
+  busy = [],
 }: {
   name: string;
   value?: string;
@@ -84,6 +85,9 @@ export function DateField({
   max?: string;
   id?: string;
   required?: boolean;
+  /* Занятые даты в ISO. Выбрать их можно — вдруг гость готов подождать или
+     договориться, — но видно сразу, что домик на эти числа занят. */
+  busy?: string[];
 }) {
   const [inner, setInner] = useState(defaultValue ?? '');
   const iso = controlled ?? inner;
@@ -103,6 +107,8 @@ export function DateField({
     if (controlled === undefined) setInner(next);
     onChange?.(next);
   }
+
+  const busySet = useMemo(() => new Set(busy), [busy]);
 
   const grid = useMemo(() => {
     const { year, month } = view;
@@ -210,6 +216,7 @@ export function DateField({
               const dayIso = makeIso(grid.year, grid.month, i + 1);
               const disabled = (min && dayIso < min) || (max && dayIso > max);
               const selected = dayIso === iso;
+              const taken = busySet.has(dayIso);
               return (
                 <button
                   key={dayIso}
@@ -219,10 +226,13 @@ export function DateField({
                     commit(dayIso);
                     setOpen(false);
                   }}
+                  title={taken ? 'занято' : undefined}
                   className={`aspect-square cursor-pointer rounded-[8px] text-[13px] transition disabled:cursor-not-allowed disabled:opacity-25 ${
                     selected
                       ? 'bg-aurora text-aurora-ink font-semibold'
-                      : 'text-ink-2 hover:bg-bg-4 hover:text-ink'
+                      : taken
+                        ? 'bg-busy/20 text-busy'
+                        : 'bg-ok/10 text-ink-2 hover:bg-bg-4 hover:text-ink'
                   }`}
                 >
                   {i + 1}
@@ -230,6 +240,17 @@ export function DateField({
               );
             })}
           </div>
+
+          {busy.length > 0 ? (
+            <div className="text-ink-3 border-line mt-2 flex items-center gap-4 border-t pt-2 text-[11.5px]">
+              <span className="flex items-center gap-1.5">
+                <span className="bg-ok/25 size-2.5 rounded-[3px]" /> свободно
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="bg-busy/40 size-2.5 rounded-[3px]" /> занято
+              </span>
+            </div>
+          ) : null}
 
           {iso ? (
             <button

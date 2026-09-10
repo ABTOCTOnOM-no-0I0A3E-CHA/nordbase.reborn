@@ -8,6 +8,8 @@ import { Nav } from '@/components/admin/Nav';
 import { Icon } from '@/components/admin/icons';
 import { AdminShell } from '@/components/admin/Shell';
 import { ToastProvider } from '@/components/admin/Toast';
+import { OfflineBadge } from '@/components/admin/OfflineBadge';
+import { LogoutButton } from '@/components/admin/LogoutButton';
 import { Mark } from '@/components/Mark';
 
 /* Проверка здесь, а не в middleware: middleware крутится на edge и не ходит в БД,
@@ -28,6 +30,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
 
   return (
     <ToastProvider>
+      <OfflineBadge />
       <AdminShell
         newRequests={counts?.fresh ?? 0}
         sidebar={
@@ -55,14 +58,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
                 {user.role === 'owner' ? 'владелец' : 'менеджер'}
               </span>
             </span>
-            <form action={logout}>
-              <button
-                type="submit"
-                className="text-ink-3 hover:text-ink cursor-pointer text-[12.5px] whitespace-nowrap"
-              >
-                Выйти
-              </button>
-            </form>
+            <LogoutButton action={logout} />
           </div>
         </div>
           </>

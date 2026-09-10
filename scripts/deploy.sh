@@ -18,6 +18,14 @@ log() {
   echo "$(date '+%Y-%m-%d %H:%M:%S')  $1"
 }
 
+# Пауза на время показа клиенту. Обновление перезапускает контейнер, и сайт
+# на несколько секунд отдаёт 502 — под руками у зрителя это выглядит поломкой.
+#   Поставить паузу: touch ~/nordbase/.deploy-pause
+#   Снять:           rm ~/nordbase/.deploy-pause
+if [ -f .deploy-pause ]; then
+  exit 0
+fi
+
 git fetch --quiet origin main
 
 local_rev=$(git rev-parse HEAD)

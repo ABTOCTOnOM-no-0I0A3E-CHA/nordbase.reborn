@@ -7,6 +7,45 @@ import { uploadOne } from '@/lib/admin/media-actions';
 
 export type MediaOption = { id: string; key: string; alt: string };
 
+/* Снимок с телефона весит 5–10 МБ, а на сервер уезжает через мобильный
+   интернет и чужой прокси: запрос успевает оборваться. Ужимаем в браузере до
+   отправки — на сервер идёт полмегабайта вместо десяти, и обработка там та же.
+
+   Если браузер не умеет нужного (старый Safari, отключённый canvas), отдаём
+   файл как есть: лучше медленная загрузка, чем никакой. */
+const MAX_EDGE = 2560;
+
+async function shrink(file: File): Promise<File> {
+  if (!file.type.startsWith('image/') || file.size < 1_500_000) return file;
+
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+    const width = Math.round(bitmap.width * scale);
+    const height = Math.round(bitmap.height * scale);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext('2d');
+    if (!context) return file;
+    context.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close?.();
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, 'image/jpeg', 0.86),
+    );
+    if (!blob || blob.size >= file.size) return file;
+
+    return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', {
+      type: 'image/jpeg',
+      lastModified: file.lastModified,
+    });
+  } catch {
+    return file;
+  }
+}
+
 /* Загрузка прямо из окна выбора. Раньше недостающую фотографию приходилось
    нести в медиатеку в другой вкладке, а несохранённые правки блока при этом
    терялись. Загруженное сразу попадает в список и выбирается. */
@@ -30,7 +69,7 @@ function UploadButton({
        владелец видит каждую появившуюся картинку. */
     for (const file of Array.from(files)) {
       const data = new FormData();
-      data.set('file', file);
+      data.set('file', await shrink(file));
       const result = await uploadOne(data);
       if (result.media) onUploaded(result.media);
       else if (result.error) setError(`${file.name}: ${result.error}`);

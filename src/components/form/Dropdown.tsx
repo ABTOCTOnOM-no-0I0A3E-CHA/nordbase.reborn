@@ -16,7 +16,15 @@ import { Popover } from './Popover';
    Значение уезжает на сервер скрытым полем, так что форма остаётся обычной
    формой и работает через Server Actions без изменений. */
 
-export type Option = { value: string; label: string };
+export type Option = {
+  value: string;
+  label: string;
+  /* Подпись справа: например «свободен» или «занят 12–14». Нужна там, где
+     выбор зависит от состояния — гость должен видеть его до клика, а не
+     узнавать из сообщения после. */
+  hint?: string;
+  tone?: 'ok' | 'busy';
+};
 
 export function Dropdown({
   name,
@@ -157,7 +165,22 @@ export function Dropdown({
                   }`}
                 >
                   <span className="truncate">{option.label}</span>
-                  {isSelected ? <span className="text-aurora flex-none">✓</span> : null}
+                  <span className="flex flex-none items-center gap-2">
+                    {option.hint ? (
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[11.5px] font-semibold ${
+                          option.tone === 'busy'
+                            ? 'bg-busy/20 text-busy'
+                            : option.tone === 'ok'
+                              ? 'bg-ok/20 text-ok'
+                              : 'text-ink-3'
+                        }`}
+                      >
+                        {option.hint}
+                      </span>
+                    ) : null}
+                    {isSelected ? <span className="text-aurora">✓</span> : null}
+                  </span>
                 </button>
               </li>
             );

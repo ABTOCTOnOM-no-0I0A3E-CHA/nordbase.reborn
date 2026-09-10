@@ -123,6 +123,40 @@ export function RequestForm({
       return wanted.every((date) => !taken.includes(date));
     });
 
+  /* Состояние каждого объекта на выбранные даты. Раньше гость выбирал домик
+     вслепую и только потом читал, что тот занят; теперь занятость видна прямо
+     в списке, а свободные стоят выше — выбирать не из чего гадать. */
+  const stayOptions = (() => {
+    const decorated = houses.map((house) => {
+      const taken = busyByHouse[house.id] ?? [];
+      const busyNights = wanted.filter((date) => taken.includes(date));
+      const free = busyNights.length === 0;
+
+      const size =
+        house.minGuests > 1
+          ? `${house.title} · до ${house.capacity} мест, от ${house.minGuests}`
+          : `${house.title} · до ${house.capacity} мест`;
+
+      return {
+        value: house.id,
+        label: size,
+        /* Пока даты не выбраны, говорить о занятости нечего. */
+        hint: wanted.length === 0 ? undefined : free ? 'свободен' : 'занят',
+        tone: wanted.length === 0 ? undefined : free ? ('ok' as const) : ('busy' as const),
+        free,
+      };
+    });
+
+    /* Свободные сверху, но порядок внутри групп прежний — владелец задаёт его
+       сам, и ломать его сортировкой по алфавиту незачем. */
+    const sorted =
+      wanted.length === 0
+        ? decorated
+        : [...decorated.filter((o) => o.free), ...decorated.filter((o) => !o.free)];
+
+    return [{ value: '', label: 'Не выбран' }, ...sorted];
+  })();
+
   if (done) {
     return (
       <div style={holdHeight ? { minHeight: holdHeight } : undefined} className="flex items-center">
@@ -179,26 +213,31 @@ export function RequestForm({
             value={houseId}
             onChange={setHouseId}
             placeholder="Не выбран"
-            options={[
-              { value: '', label: 'Не выбран' },
-              ...houses.map((house) => ({
-                value: house.id,
-                /* Вместимость и минимум прямо в строке: гость выбирает домик
-                   под свою компанию, а не наугад. */
-                label:
-                  house.minGuests > 1
-                    ? `${house.title} · до ${house.capacity} мест, от ${house.minGuests}`
-                    : `${house.title} · до ${house.capacity} мест`,
-              })),
-            ]}
+            options={stayOptions}
           />
-          {stay ? (
+          {/* Пока дат нет, занятость показать нечем — так и говорим, вместо
+              того чтобы молчать и ждать, пока гость выберет вслепую. */}
+          {wanted.length === 0 ? (
             <p className="text-ink-3 mt-2 text-[12.5px]">
-              {stay.pricePerNight
-                ? `${stay.pricePerNight.toLocaleString('ru-RU')} ₽ с человека в сутки`
-                : 'Цену подскажем в ответе'}
+              Укажите даты — покажем, какие домики на них свободны.
             </p>
-          ) : null}
+          ) : stay ? (
+            <p className="mt-2 text-[12.5px]">
+              <span className={clash.length > 0 ? 'text-busy' : 'text-ok'}>
+                {clash.length > 0 ? 'На эти даты занят' : 'Свободен на эти даты'}
+              </span>
+              {stay.pricePerNight ? (
+                <span className="text-ink-3">
+                  {' · '}
+                  {stay.pricePerNight.toLocaleString('ru-RU')} ₽ с человека в сутки
+                </span>
+              ) : null}
+            </p>
+          ) : (
+            <p className="text-ink-3 mt-2 text-[12.5px]">
+              Свободные на эти даты — в начале списка.
+            </p>
+          )}
         </div>
       ) : null}
 

@@ -48,7 +48,20 @@ export type Booking = {
   contactValue: string;
 };
 
-type Bar = { id: string; start: number; span: number; booking: Booking };
+type Bar = {
+  id: string;
+  start: number;
+  span: number;
+  booking: Booking;
+  /* В день заезда этой брони кто-то выезжает из того же домика. Тогда полоса
+     начинается с середины клетки: до полудня домик ещё занят уходящими, после
+     обеда въезжают новые. Иначе одна ночь выглядела как два занятых дня —
+     именно на это жаловалась владелица. */
+  sharesCheckout: boolean;
+};
+
+/* Хвост уезжающей брони: левая половина клетки дня выезда. */
+type Tail = { id: string; day: number; booking: Booking };
 
 function daysInMonth(year: number, month: number): number {
   return new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
@@ -132,7 +145,7 @@ function Hint({
         </div>
         <div className="flex justify-between gap-3">
           <dt className="text-ink-3">Выезд</dt>
-          <dd>{human(booking.dateTo)}</dd>
+          <dd>{human(booking.dateTo)} до 12:00</dd>
         </div>
         <div className="flex justify-between gap-3">
           <dt className="text-ink-3">Ночей</dt>
@@ -150,7 +163,10 @@ function Hint({
         <p className="border-line text-ink mt-2 border-t pt-2 text-[12.5px]">{booking.note}</p>
       ) : null}
 
-      <p className="text-aurora mt-2 text-[11.5px]">Нажмите, чтобы изменить или убрать</p>
+      <p className="text-ink-3 mt-2 text-[11.5px] leading-[1.4]">
+        В день выезда домик освобождается — можно заселять новых гостей с 15:00.
+      </p>
+      <p className="text-aurora mt-1.5 text-[11.5px]">Нажмите, чтобы изменить или убрать</p>
     </div>,
     document.body,
   );
@@ -188,10 +204,27 @@ export function Occupancy({
   /* Для каждого домика — отрезки, попадающие в этот месяц; заодно копим
      сводку по дням. Полоса рисуется от дня заезда до дня перед выездом:
      день выезда уже свободен. */
-  const { bars, busyHouses, guestsPerDay } = useMemo(() => {
+  const { bars, tails, busyHouses, guestsPerDay } = useMemo(() => {
     const bars = new Map<string, Bar[]>();
+    const tails = new Map<string, Tail[]>();
     const busyHouses = new Map<number, Set<string>>();
     const guestsPerDay = new Map<number, number>();
+
+    /* Сначала собираем дни выезда по каждому домику: они нужны, чтобы понять,
+       какие полосы начинаются в уже «полузанятой» клетке. */
+    const checkouts = new Map<string, Set<number>>();
+    for (const booking of bookings) {
+      if (booking.status === 'cancelled') continue;
+      if (booking.dateTo < firstIso || booking.dateTo > lastIso) continue;
+      const day = Number(booking.dateTo.slice(8, 10));
+      const set = checkouts.get(booking.houseId) ?? new Set<number>();
+      set.add(day);
+      checkouts.set(booking.houseId, set);
+
+      const list = tails.get(booking.houseId) ?? [];
+      list.push({ id: booking.id, day, booking });
+      tails.set(booking.houseId, list);
+    }
 
     for (const booking of bookings) {
       if (booking.status === 'cancelled') continue;
@@ -202,7 +235,13 @@ export function Occupancy({
 
       const startDay = Number(nights[0]!.slice(8, 10));
       const list = bars.get(booking.houseId) ?? [];
-      list.push({ id: booking.id, start: startDay, span: nights.length, booking });
+      list.push({
+        id: booking.id,
+        start: startDay,
+        span: nights.length,
+        booking,
+        sharesCheckout: (checkouts.get(booking.houseId)?.has(startDay) ?? false),
+      });
       bars.set(booking.houseId, list);
 
       for (const night of nights) {
@@ -214,7 +253,7 @@ export function Occupancy({
       }
     }
 
-    return { bars, busyHouses, guestsPerDay };
+    return { bars, tails, busyHouses, guestsPerDay };
   }, [bookings, firstIso, lastIso]);
 
   const todayDay = today.slice(0, 7) === firstIso.slice(0, 7) ? Number(today.slice(8, 10)) : null;
@@ -274,6 +313,9 @@ export function Occupancy({
           </span>
           <span className="flex items-center gap-1.5">
             <span className="bg-amber size-3 rounded-[3px]" /> ждёт подтверждения
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="bg-busy/45 size-3 rounded-[3px]" /> день выезда, до 12:00
           </span>
         </span>
       </div>
@@ -347,6 +389,25 @@ export function Occupancy({
                     );
                   })}
 
+                  {/* Хвосты уезжающих: левая половина клетки дня выезда.
+                      До полудня домик ещё занят, после обеда въезжают новые —
+                      поэтому в одной клетке сходятся конец одной брони и
+                      начало другой. */}
+                  {(tails.get(house.id) ?? []).map((tail) => (
+                    <span
+                      key={`tail-${tail.id}`}
+                      title={`Выезд ${human(tail.booking.dateTo)} до 12:00 — в этот день можно заселять`}
+                      style={{ gridColumn: `${tail.day + 1} / span 1`, gridRow: 1 }}
+                      className="pointer-events-none relative z-[9] h-10"
+                    >
+                      <span
+                        className={`absolute inset-y-0 left-0 w-1/2 rounded-l-[6px] opacity-45 ${
+                          tail.booking.status === 'confirmed' ? 'bg-busy' : 'bg-amber'
+                        }`}
+                      />
+                    </span>
+                  ))}
+
                   {/* Полосы броней поверх подложки */}
                   {list.map((bar) => (
                     <button
@@ -361,7 +422,13 @@ export function Occupancy({
                         setHint({ rect: event.currentTarget.getBoundingClientRect(), bar })
                       }
                       onBlur={() => setHint((v) => (v?.bar.id === bar.id ? null : v))}
-                      style={{ gridColumn: `${bar.start + 1} / span ${bar.span}`, gridRow: 1 }}
+                      style={{
+                        gridColumn: `${bar.start + 1} / span ${bar.span}`,
+                        gridRow: 1,
+                        /* Половина одной колонки внутри полосы: её доля равна
+                           100/span процентов, значит половина — 50/span. */
+                        marginLeft: bar.sharesCheckout ? `calc(50% / ${bar.span})` : undefined,
+                      }}
                       className={`z-10 flex h-10 cursor-pointer items-center overflow-hidden rounded-[6px] px-2 text-[12px] font-semibold whitespace-nowrap transition ${
                         bar.booking.status === 'confirmed' ? 'bg-busy text-bg' : 'bg-amber text-bg'
                       } ${

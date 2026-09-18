@@ -53,15 +53,12 @@ type Bar = {
   start: number;
   span: number;
   booking: Booking;
-  /* В день заезда этой брони кто-то выезжает из того же домика. Тогда полоса
-     начинается с середины клетки: до полудня домик ещё занят уходящими, после
-     обеда въезжают новые. Иначе одна ночь выглядела как два занятых дня —
-     именно на это жаловалась владелица. */
-  sharesCheckout: boolean;
+  /* Бронь началась до первого числа месяца или кончается после последнего.
+     Такой конец рисуем встык к краю, без скругления, — видно, что полоса
+     продолжается за границей экрана. */
+  clippedStart: boolean;
+  clippedEnd: boolean;
 };
-
-/* Хвост уезжающей брони: левая половина клетки дня выезда. */
-type Tail = { id: string; day: number; booking: Booking };
 
 function daysInMonth(year: number, month: number): number {
   return new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
@@ -202,29 +199,12 @@ export function Occupancy({
   const lastIso = iso(view.year, view.month, total);
 
   /* Для каждого домика — отрезки, попадающие в этот месяц; заодно копим
-     сводку по дням. Полоса рисуется от дня заезда до дня перед выездом:
-     день выезда уже свободен. */
-  const { bars, tails, busyHouses, guestsPerDay } = useMemo(() => {
+     сводку по дням. Ночей в брони столько же, сколько клеток она закрывает
+     целиком: день выезда полоса занимает лишь до полудня. */
+  const { bars, busyHouses, guestsPerDay } = useMemo(() => {
     const bars = new Map<string, Bar[]>();
-    const tails = new Map<string, Tail[]>();
     const busyHouses = new Map<number, Set<string>>();
     const guestsPerDay = new Map<number, number>();
-
-    /* Сначала собираем дни выезда по каждому домику: они нужны, чтобы понять,
-       какие полосы начинаются в уже «полузанятой» клетке. */
-    const checkouts = new Map<string, Set<number>>();
-    for (const booking of bookings) {
-      if (booking.status === 'cancelled') continue;
-      if (booking.dateTo < firstIso || booking.dateTo > lastIso) continue;
-      const day = Number(booking.dateTo.slice(8, 10));
-      const set = checkouts.get(booking.houseId) ?? new Set<number>();
-      set.add(day);
-      checkouts.set(booking.houseId, set);
-
-      const list = tails.get(booking.houseId) ?? [];
-      list.push({ id: booking.id, day, booking });
-      tails.set(booking.houseId, list);
-    }
 
     for (const booking of bookings) {
       if (booking.status === 'cancelled') continue;
@@ -233,14 +213,24 @@ export function Occupancy({
       );
       if (nights.length === 0) continue;
 
+      /* Полоса идёт от дня заезда до дня выезда включительно, а половинки
+         крайних клеток отрезаются отступами при отрисовке: заезд после обеда,
+         выезд до полудня. Так две брони встречаются в одной клетке — ровно
+         как в календарях систем бронирования. */
       const startDay = Number(nights[0]!.slice(8, 10));
+      const clippedStart = booking.dateFrom < firstIso;
+      const clippedEnd = booking.dateTo > lastIso;
+      const lastNight = Number(nights[nights.length - 1]!.slice(8, 10));
+      const endDay = clippedEnd ? lastNight : Math.min(total, lastNight + 1);
+
       const list = bars.get(booking.houseId) ?? [];
       list.push({
         id: booking.id,
         start: startDay,
-        span: nights.length,
+        span: Math.max(1, endDay - startDay + 1),
         booking,
-        sharesCheckout: (checkouts.get(booking.houseId)?.has(startDay) ?? false),
+        clippedStart,
+        clippedEnd,
       });
       bars.set(booking.houseId, list);
 
@@ -253,8 +243,8 @@ export function Occupancy({
       }
     }
 
-    return { bars, tails, busyHouses, guestsPerDay };
-  }, [bookings, firstIso, lastIso]);
+    return { bars, busyHouses, guestsPerDay };
+  }, [bookings, firstIso, lastIso, total]);
 
   const todayDay = today.slice(0, 7) === firstIso.slice(0, 7) ? Number(today.slice(8, 10)) : null;
   /* Обе ширины приходят из CSS. На телефоне колонка с названием домика ужата,
@@ -314,8 +304,15 @@ export function Occupancy({
           <span className="flex items-center gap-1.5">
             <span className="bg-amber size-3 rounded-[3px]" /> ждёт подтверждения
           </span>
+          {/* Две полосы, сошедшиеся в одной клетке: одни уезжают до 12:00,
+              другие въезжают с 15:00 — день считается за одну ночь, а не за
+              две. Без этой подсказки половинки клеток выглядят ошибкой. */}
           <span className="flex items-center gap-1.5">
-            <span className="bg-busy/45 size-3 rounded-[3px]" /> день выезда, до 12:00
+            <span className="flex h-3 w-6 items-center gap-[2px]">
+              <span className="bg-busy h-full flex-1 rounded-l-[3px] rounded-r-[1px]" />
+              <span className="bg-busy h-full flex-1 rounded-l-[1px] rounded-r-[3px]" />
+            </span>
+            выезд и заезд в один день
           </span>
         </span>
       </div>
@@ -389,25 +386,6 @@ export function Occupancy({
                     );
                   })}
 
-                  {/* Хвосты уезжающих: левая половина клетки дня выезда.
-                      До полудня домик ещё занят, после обеда въезжают новые —
-                      поэтому в одной клетке сходятся конец одной брони и
-                      начало другой. */}
-                  {(tails.get(house.id) ?? []).map((tail) => (
-                    <span
-                      key={`tail-${tail.id}`}
-                      title={`Выезд ${human(tail.booking.dateTo)} до 12:00 — в этот день можно заселять`}
-                      style={{ gridColumn: `${tail.day + 1} / span 1`, gridRow: 1 }}
-                      className="pointer-events-none relative z-[9] h-10"
-                    >
-                      <span
-                        className={`absolute inset-y-0 left-0 w-1/2 rounded-l-[6px] opacity-45 ${
-                          tail.booking.status === 'confirmed' ? 'bg-busy' : 'bg-amber'
-                        }`}
-                      />
-                    </span>
-                  ))}
-
                   {/* Полосы броней поверх подложки */}
                   {list.map((bar) => (
                     <button
@@ -425,11 +403,17 @@ export function Occupancy({
                       style={{
                         gridColumn: `${bar.start + 1} / span ${bar.span}`,
                         gridRow: 1,
-                        /* Половина одной колонки внутри полосы: её доля равна
-                           100/span процентов, значит половина — 50/span. */
-                        marginLeft: bar.sharesCheckout ? `calc(50% / ${bar.span})` : undefined,
+                        /* Полоса начинается серединой дня заезда и кончается
+                           серединой дня выезда. Половина одной колонки внутри
+                           полосы — это 50/span процентов её ширины: доля одной
+                           колонки равна 100/span. Обрезанный краем месяца конец
+                           прижимаем к границе — полоса уходит за экран. */
+                        marginLeft: bar.clippedStart ? undefined : `calc(50% / ${bar.span})`,
+                        marginRight: bar.clippedEnd ? undefined : `calc(50% / ${bar.span})`,
                       }}
-                      className={`z-10 flex h-10 cursor-pointer items-center overflow-hidden rounded-[6px] px-2 text-[12px] font-semibold whitespace-nowrap transition ${
+                      className={`z-10 flex h-10 cursor-pointer items-center overflow-hidden rounded-[8px] border-x-2 border-transparent bg-clip-padding px-1.5 text-[12px] font-semibold whitespace-nowrap transition ${
+                        bar.clippedStart ? 'rounded-l-none border-l-0' : ''
+                      } ${bar.clippedEnd ? 'rounded-r-none border-r-0' : ''} ${
                         bar.booking.status === 'confirmed' ? 'bg-busy text-bg' : 'bg-amber text-bg'
                       } ${
                         selectedId === bar.id

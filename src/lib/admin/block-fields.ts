@@ -119,8 +119,8 @@ export const BLOCK_FIELDS: Record<BlockType, FieldDef[]> = {
       label: 'Цифры',
       itemLabel: 'Цифра',
       fields: [
-        { kind: 'text', name: 'value', label: 'Крупная строка', placeholder: 'до 8 человек' },
-        { kind: 'text', name: 'label', label: 'Подпись', placeholder: 'в поездке' },
+        { kind: 'text', name: 'value', label: 'Крупная строка', placeholder: '4 человека' },
+        { kind: 'text', name: 'label', label: 'Подпись', placeholder: 'в одной поездке' },
       ],
     },
   ],

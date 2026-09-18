@@ -276,12 +276,21 @@ function Cta({ block }: { block: Extract<Block, { type: 'cta' }> }) {
 /* ------------------------------------------------------------- связанные */
 
 function Houses({ block, data }: { block: Extract<Block, { type: 'houses' }>; data: BlockData }) {
-  const items = block.limit > 0 ? data.houses.slice(0, block.limit) : data.houses;
+  const all = block.limit > 0 ? data.houses.slice(0, block.limit) : data.houses;
+
+  /* Кемпы одинаковые, их четыре — четырьмя карточками они забивают блок и
+     читаются как четыре разных дома. Показываем одной карточкой с числом
+     штук; в панели они по-прежнему отдельные объекты, иначе занятость по ним
+     не отметить. */
+  const houses = all.filter((item) => item.kind !== 'camp');
+  const camps = all.filter((item) => item.kind === 'camp');
+  const camp = camps[0];
+
   return (
     <>
       <SectionHead eyebrow={block.eyebrow} title={block.title} subtitle={block.subtitle} />
       <div className="grid gap-5 md:grid-cols-3">
-        {items.map((house) => (
+        {houses.map((house) => (
           <Link
             key={house.id}
             href={`/rybachiy/doma/${house.slug}`}
@@ -308,6 +317,35 @@ function Houses({ block, data }: { block: Extract<Block, { type: 'houses' }>; da
             </div>
           </Link>
         ))}
+
+        {camp ? (
+          <Link
+            href={`/rybachiy/doma/${camp.slug}`}
+            className="bg-bg-3 border-line hover:border-line-2 overflow-hidden rounded-[16px] border transition"
+          >
+            <Picture
+              media={camp.coverId ? data.media.get(camp.coverId) : undefined}
+              sizes="(max-width: 768px) 100vw, 33vw"
+              className="aspect-[4/3] w-full object-cover"
+            />
+            <div className="p-5">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <h3 className="text-[19px] font-bold tracking-[-0.015em]">
+                  Кемпы · {camps.length} шт.
+                </h3>
+                <span className="bg-ok/15 text-ok rounded-full px-2.5 py-1 text-[11.5px] font-semibold uppercase">
+                  по {camp.capacity}
+                </span>
+              </div>
+              <p className="text-ink-2 text-[14.5px]">{camp.summary}</p>
+              {camp.pricePerNight ? (
+                <p className="text-aurora mt-3 text-[14px] font-semibold">
+                  {money(camp.pricePerNight)} / чел. в сутки
+                </p>
+              ) : null}
+            </div>
+          </Link>
+        ) : null}
       </div>
     </>
   );

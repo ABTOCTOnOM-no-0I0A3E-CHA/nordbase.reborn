@@ -8,7 +8,7 @@ import { parseBlocks } from '@/lib/blocks';
 import { loadBlockData, loadSettings, parseMeta } from '@/lib/site-data';
 import { BlockList } from '@/components/blocks/render';
 import { Picture } from '@/components/blocks/Picture';
-import { Btn, Card, Eyebrow, Section } from '@/components/site/ui';
+import { Btn, Card, Crumbs, Eyebrow, Section } from '@/components/site/ui';
 import { BreadcrumbsLd, HouseLd } from '@/components/site/Schema';
 import { mediaUrl } from '@/lib/media-url';
 
@@ -36,7 +36,7 @@ export async function generateMetadata({
   const house = await findHouse((await params).slug);
   if (!house) return {};
   return pageMetadata({
-    title: house.title,
+    title: `${house.title} на полуострове Рыбачий`,
     description: house.summary,
     path: `/rybachiy/doma/${house.slug}`,
     imageKey: await mediaKey(house.coverId),
@@ -85,10 +85,19 @@ export default async function HousePage({ params }: { params: Promise<Params> })
       />
       <Section>
         <div className="pt-24">
-          <Eyebrow>Домики: {settings.legalName}</Eyebrow>
+          <Crumbs
+            items={[
+              { name: 'Главная', path: '/' },
+              { name: 'Полуостров Рыбачий', path: '/rybachiy' },
+              { name: house.title, path: `/rybachiy/doma/${house.slug}` },
+            ]}
+          />
+          <div className="mt-5">
+            <Eyebrow>Домики: {settings.legalName}</Eyebrow>
+          </div>
           <div className="mt-4 flex flex-wrap items-end justify-between gap-6">
             <h1 className="max-w-[16ch] text-[clamp(30px,4.4vw,52px)] leading-[1.1] font-bold tracking-[-0.025em]">
-              {house.title}
+              {house.title} на полуострове Рыбачий
             </h1>
             <Btn href="/#request">{settings.ctaLabel}</Btn>
           </div>

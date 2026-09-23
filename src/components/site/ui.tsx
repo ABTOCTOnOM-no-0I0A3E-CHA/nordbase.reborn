@@ -118,6 +118,35 @@ export function Prose({ text, className = '' }: { text: string; className?: stri
   );
 }
 
+/* Хлебные крошки. Разметку для поисковиков карточки отдавали и раньше, но
+   гость её не видит: со страницы дома или тура не было пути наверх, кроме
+   кнопки «назад» в браузере. */
+export function Crumbs({ items }: { items: { name: string; path: string }[] }) {
+  const last = items.length - 1;
+  return (
+    <nav aria-label="Хлебные крошки" className="text-ink-3 text-[13px]">
+      <ol className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        {items.map((item, i) => (
+          <li key={item.path} className="flex items-center gap-2">
+            {i === last ? (
+              <span aria-current="page" className="text-ink-2">
+                {item.name}
+              </span>
+            ) : (
+              <>
+                <Link href={item.path} className="hover:text-ink transition">
+                  {item.name}
+                </Link>
+                <span aria-hidden="true">/</span>
+              </>
+            )}
+          </li>
+        ))}
+      </ol>
+    </nav>
+  );
+}
+
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
     <div className={`bg-bg-3 border-line rounded-[16px] border ${className}`}>{children}</div>

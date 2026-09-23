@@ -7,7 +7,7 @@ import { tourDays, tourStops, tours } from '@/db/schema';
 import { parseBlocks } from '@/lib/blocks';
 import { loadBlockData, loadSettings, parseMeta } from '@/lib/site-data';
 import { BlockList } from '@/components/blocks/render';
-import { Btn, Card, Eyebrow, Section } from '@/components/site/ui';
+import { Btn, Card, Crumbs, Eyebrow, Section } from '@/components/site/ui';
 import { BreadcrumbsLd, TourLd } from '@/components/site/Schema';
 import { mediaUrl } from '@/lib/media-url';
 
@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const tour = await findTour((await params).slug);
   if (!tour) return {};
   return pageMetadata({
-    title: tour.title,
+    title: `${tour.title} на полуостров Рыбачий из Мурманска`,
     description: tour.summary,
     path: `/rybachiy/tury/${tour.slug}`,
     imageKey: await mediaKey(tour.coverId),
@@ -83,10 +83,19 @@ export default async function TourPage({ params }: { params: Promise<Params> }) 
       />
       <Section>
         <div className="pt-24">
-          <Eyebrow>Туры по Рыбачьему</Eyebrow>
+          <Crumbs
+            items={[
+              { name: 'Главная', path: '/' },
+              { name: 'Туры по Рыбачьему', path: '/rybachiy/tury' },
+              { name: tour.title, path: `/rybachiy/tury/${tour.slug}` },
+            ]}
+          />
+          <div className="mt-5">
+            <Eyebrow>Туры по Рыбачьему</Eyebrow>
+          </div>
           <div className="mt-4 flex flex-wrap items-end justify-between gap-6">
             <h1 className="max-w-[16ch] text-[clamp(30px,4.4vw,52px)] leading-[1.1] font-bold tracking-[-0.025em]">
-              {tour.title}
+              {tour.title} на полуостров Рыбачий
             </h1>
             <Btn href="/#request">{settings.ctaLabel}</Btn>
           </div>

@@ -66,7 +66,7 @@ export default async function SeasonPage({ params }: { params: Promise<Params> }
           <Eyebrow>Териберка</Eyebrow>
           <div className="mt-4 flex flex-wrap items-end justify-between gap-6">
             <h1 className="text-[clamp(30px,4.4vw,52px)] leading-[1.1] font-bold tracking-[-0.025em]">
-              {season.title}
+              Териберка — {season.title.toLowerCase()}
             </h1>
             <Btn href="/#request">{settings.ctaLabel}</Btn>
           </div>

@@ -50,5 +50,15 @@ export default async function Page({ params }: { params: Promise<Params> }) {
   const blocks = parseBlocks(page.body);
   const data = await loadBlockData(blocks);
 
-  return <BlockList blocks={blocks} data={data} />;
+  /* Заголовок первого уровня поисковик читает как тему страницы. Его даёт
+     обложка, но страница, собранная из одних секций, осталась бы без него
+     вовсе — тогда подставляем название страницы. */
+  const hasHeroTitle = blocks.some((block) => block.type === 'hero' && block.title);
+
+  return (
+    <>
+      {hasHeroTitle ? null : <h1 className="sr-only">{page.title}</h1>}
+      <BlockList blocks={blocks} data={data} />
+    </>
+  );
 }

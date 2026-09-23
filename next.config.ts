@@ -24,11 +24,22 @@ const config: NextConfig = {
     serverActions: { bodySizeLimit: '30mb' },
   },
   async headers() {
-    if (!noindex) return [];
+    /* Базовая защита, которую стоит отдавать с боевого домена: запрет
+       показывать сайт в чужом фрейме (кликджекинг поверх формы заявки),
+       запрет угадывать тип файла за нас и урезанный реферер — чужие сайты
+       не должны видеть, с какой именно страницы панели ушёл переход. */
+    const base = [
+      { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+    ];
+
     return [
       {
         source: '/:path*',
-        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+        headers: noindex
+          ? [...base, { key: 'X-Robots-Tag', value: 'noindex, nofollow' }]
+          : base,
       },
     ];
   },

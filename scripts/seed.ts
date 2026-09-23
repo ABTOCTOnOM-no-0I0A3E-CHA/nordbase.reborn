@@ -762,6 +762,16 @@ await db.insert(s.pages).values([
     publishedAt: new Date(),
     body: [
       {
+        type: 'hero',
+        height: 'compact',
+        aurora: false,
+        ...heading('Туры', 'Туры на полуостров Рыбачий из Мурманска'),
+        lead: 'Двухдневный и трёхдневный маршруты: заброска на вездеходе, ночёвка на базе, программа по дням.',
+        mediaId: heroRybachiy,
+        primaryLabel: 'Оставить заявку',
+        primaryHref: '#request',
+      },
+      {
         type: 'text',
         ...heading(
           'Туры по Рыбачьему',
@@ -847,6 +857,16 @@ await db.insert(s.pages).values([
     publishedAt: new Date(),
     body: [
       {
+        type: 'hero',
+        height: 'compact',
+        aurora: false,
+        ...heading('Полуостров Рыбачий', 'Заброска на Рыбачий на вездеходе'),
+        lead: 'Встречаем в Титовке и везём на базу: обычная машина по этой дороге не пройдёт.',
+        mediaId: truck,
+        primaryLabel: 'Оставить заявку',
+        primaryHref: '#request',
+      },
+      {
         type: 'textMedia',
         ...heading('Продвинутый транспорт', 'Вездеход довезёт туда, куда обычная машина не дойдёт'),
         body: 'Мы гордимся своим транспортом: вездеход обеспечит комфорт и безопасность даже в самых труднодоступных местах.\n\nВстречаем гостей в Титовке и забрасываем на базу сами — дорога на Рыбачий обычной машине не по силам.',
@@ -876,6 +896,16 @@ await db.insert(s.pages).values([
     status: 'published',
     publishedAt: new Date(),
     body: [
+      {
+        type: 'hero',
+        height: 'compact',
+        aurora: false,
+        ...heading('Полуостров Рыбачий', 'Цены на отдых на полуострове Рыбачий'),
+        lead: 'Проживание, питание, заброска на вездеходе и баня: что сколько стоит и из чего складывается сумма поездки.',
+        mediaId: heroRybachiy,
+        primaryLabel: 'Оставить заявку',
+        primaryHref: '#request',
+      },
       {
         type: 'prices',
         ...heading(

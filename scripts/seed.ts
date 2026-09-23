@@ -171,7 +171,7 @@ const houseRows = await db
       /* Дом сдают только компанией: меньше пяти человек его не отдают. */
       minGuests: 5,
       kind: 'house',
-      pricePerNight: 6000,
+      pricePerNight: 6500,
       coverId: house1Cover,
       sort: 1,
       status: 'published',
@@ -208,7 +208,7 @@ const houseRows = await db
       capacity: 4,
       minGuests: 2,
       kind: 'house',
-      pricePerNight: 6000,
+      pricePerNight: 6500,
       coverId: house2Cover,
       sort: 2,
       status: 'published',
@@ -240,7 +240,7 @@ const houseRows = await db
       capacity: 2,
       minGuests: 1,
       kind: 'house',
-      pricePerNight: 6000,
+      pricePerNight: 6500,
       coverId: null,
       sort: 3,
       status: 'published',
@@ -256,7 +256,7 @@ const houseRows = await db
       capacity: 2,
       minGuests: 1,
       kind: 'camp' as const,
-      pricePerNight: 5000,
+      pricePerNight: 5500,
       coverId: null,
       sort: 10 + n,
       status: 'published' as const,
@@ -486,7 +486,15 @@ await db.insert(s.prices).values([
     group: 'base',
     title: 'Проживание в домике',
     note: 'Эко-дома со всеми удобствами, 4–6 человек',
-    amount: 6000,
+    amount: 6500,
+    unit: 'с человека в сутки',
+    sort: 2,
+  },
+  {
+    group: 'base',
+    title: 'Проживание в кемпе',
+    note: 'Кемп на 2 гостей: вода, бельё, кухонный инвентарь',
+    amount: 5500,
     unit: 'с человека в сутки',
     sort: 2,
   },
@@ -502,7 +510,7 @@ await db.insert(s.prices).values([
     group: 'extra',
     title: 'Вездеход отдельно, без тура',
     note: 'На группу, до 4 человек за поездку',
-    amount: 40000,
+    amount: 50000,
     unit: 'в день',
     sort: 4,
   },
@@ -542,7 +550,7 @@ await db.insert(s.faq).values(
     ],
     [
       'Из чего складывается стоимость?',
-      'Заброска на вездеходе входит в стоимость тура. Отдельно считаются проживание — 6 000 ₽ с человека в сутки и питание — 2 800 ₽ с человека в день. Баня — по договорённости на месте.',
+      'Заброска на вездеходе входит в стоимость тура. Отдельно считаются проживание — 6 500 ₽ с человека в сутки в доме и 5 500 ₽ в кемпе — и питание, 2 800 ₽ с человека в день. Баня — по договорённости на месте.',
     ],
     [
       'Сколько человек берёте в поездку?',
@@ -570,7 +578,7 @@ await db.insert(s.faq).values(
     ],
     [
       'Сколько стоит проживание на базе отдыха на Рыбачьем?',
-      'Проживание — 5 500 рублей с человека в сутки, питание — 2 500 рублей в день по предзаказу. Актуальные цены всегда на странице «Цены».',
+      'Дом — 6 500 рублей с человека в сутки, кемп — 5 500. Питание — 2 800 рублей в день по предзаказу. Актуальные цены всегда на странице «Цены».',
     ],
   ].map(([question, answer], index) => ({ question: question!, answer: answer!, sort: index })),
 );
@@ -867,7 +875,7 @@ await db.insert(s.pages).values([
         items: [
           { value: '4 человека', label: 'в одной поездке' },
           { value: 'Титовка', label: 'место встречи' },
-          { value: '40 000 ₽', label: 'в день на группу' },
+          { value: '50 000 ₽', label: 'в день на группу' },
         ],
       },
       { type: 'requestForm', ...heading('Заявка', 'Спросить про заброску') },
@@ -878,7 +886,7 @@ await db.insert(s.pages).values([
     title: 'Цены',
     seoTitle: 'Цены — база отдыха «Север»',
     seoDescription:
-      'Вездеход 40 000 ₽ в день, проживание 5 500 ₽ с человека в сутки, питание 2 500 ₽ с человека в день.',
+      'Вездеход 50 000 ₽ в день, дом 6 500 ₽ и кемп 5 500 ₽ с человека в сутки, питание 2 800 ₽ с человека в день.',
     status: 'published',
     publishedAt: new Date(),
     body: [

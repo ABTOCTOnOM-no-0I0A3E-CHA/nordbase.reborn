@@ -1,11 +1,39 @@
+'use client';
+
 import Script from 'next/script';
+import { useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 
 /* Яндекс.Метрика. Подключается, только когда владелец вписал номер счётчика в
    настройках: без номера на страницу не уходит ни одного стороннего скрипта —
    и сайт остаётся быстрым у тех, кто счётчик заводить не стал.
 
    afterInteractive: счётчик не должен задерживать отрисовку первого экрана. */
+
+declare global {
+  interface Window {
+    ym?: (id: number, action: string, url?: string, params?: Record<string, unknown>) => void;
+  }
+}
+
 export function Metrika({ id }: { id: string }) {
+  const pathname = usePathname();
+  /* Первый показ счётчик засчитывает сам при init — второй хит на него был бы
+     двойным просмотром. */
+  const counted = useRef(false);
+
+  /* Переходы внутри сайта не перезагружают страницу, а tag.js видит только
+     первую. Без досылки хита в отчётах у каждого визита остаётся одна
+     страница входа, а «Цены» и карточки домов выглядят непосещаемыми. */
+  useEffect(() => {
+    if (!id) return;
+    if (!counted.current) {
+      counted.current = true;
+      return;
+    }
+    window.ym?.(Number(id), 'hit', window.location.href, { referer: document.referrer });
+  }, [id, pathname]);
+
   if (!id) return null;
 
   return (

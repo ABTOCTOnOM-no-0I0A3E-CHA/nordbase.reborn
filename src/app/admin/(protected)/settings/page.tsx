@@ -6,6 +6,7 @@ import { MenuFields } from '@/components/admin/MenuFields';
 import { NumberField } from '@/components/form/NumberField';
 import { ActionForm } from '@/components/admin/ActionForm';
 import { CoverField } from '@/components/admin/CoverField';
+import { PasswordForm } from '@/components/admin/PasswordForm';
 import { loadMediaOptions } from '@/lib/admin/media-options';
 
 export const metadata = { title: 'Настройки' };
@@ -166,6 +167,15 @@ export default async function SettingsPage() {
             </div>
           </fieldset>
         </ActionForm>
+      </Panel>
+
+      {/* Свой пароль меняет каждый сам — и владелец, и менеджер. */}
+      <Panel className="mt-6">
+        <AdminHeading
+          title="Пароль от панели"
+          description="Смена пароля разлогинит все остальные устройства — на них нужно будет войти заново."
+        />
+        <PasswordForm email={user?.email ?? ''} />
       </Panel>
     </div>
   );

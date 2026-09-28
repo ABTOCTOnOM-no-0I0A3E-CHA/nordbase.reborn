@@ -10,6 +10,14 @@ const optionalUrl = z
   .transform((value) => (value === '' ? undefined : value))
   .pipe(z.url().optional());
 
+/* Незаданная строка в compose тоже приходит пустой — считаем это «не задано».
+   Пробелы по краям срезаем: их легко привезти копипастом из переписки. */
+const optionalText = z
+  .string()
+  .trim()
+  .optional()
+  .transform((value) => (value === '' ? undefined : value));
+
 /* Падаем на старте, а не в рантайме на первой заявке. */
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -24,6 +32,12 @@ const schema = z.object({
     .string()
     .optional()
     .transform((value) => value === '1' || value?.toLowerCase() === 'true'),
+
+  /* Учётка владельца прямо из файла: пароль отсюда главнее записанного в
+     базе, так что правка .env и перезапуск — это и смена пароля, и способ
+     восстановить доступ. Пусто — работают только учётки из базы. */
+  ADMIN_EMAIL: optionalText,
+  ADMIN_PASSWORD: optionalText,
 
   TELEGRAM_BOT_TOKEN: z.string().optional(),
   TELEGRAM_CHAT_ID: z.string().optional(),

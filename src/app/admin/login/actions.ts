@@ -7,6 +7,7 @@ import { db } from '@/db';
 import { users } from '@/db/schema';
 import { verifyPassword } from '@/lib/auth/password';
 import { createSession } from '@/lib/auth/session';
+import { ensureEnvAdmin, envAdmin, sameSecret } from '@/lib/auth/env-admin';
 import { allow, clientKey } from '@/lib/throttle';
 
 const schema = z.object({
@@ -43,6 +44,20 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   });
 
   if (!parsed.success) return { error: 'Проверьте почту и пароль' };
+
+  /* Учётку из .env проверяем по файлу, а не по базе: файл на сервере — это
+     источник истины, и пароль, записанный в базе раньше, пускать не должен. */
+  const admin = envAdmin();
+  if (admin && parsed.data.email.toLowerCase() === admin.email) {
+    if (!sameSecret(parsed.data.password, admin.password)) {
+      return { error: 'Неверная почта или пароль' };
+    }
+    const id = await ensureEnvAdmin();
+    if (!id) return { error: 'Неверная почта или пароль' };
+
+    await createSession(id);
+    redirect(safeNext(formData.get('next')));
+  }
 
   const rows = await db
     .select()

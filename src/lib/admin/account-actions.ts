@@ -6,6 +6,7 @@ import { db } from '@/db';
 import { sessions, users } from '@/db/schema';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
 import { createSession, getSessionUser } from '@/lib/auth/session';
+import { envAdmin } from '@/lib/auth/env-admin';
 import { allow, clientKey } from '@/lib/throttle';
 
 export type AccountState = { error?: string; ok?: string };
@@ -30,6 +31,13 @@ export async function changePassword(
      19 МиБ, и без ограничения форма стала бы обходным путём для перебора. */
   if (!allow(await clientKey('password'), 10, 15 * 60 * 1000)) {
     return { error: 'Слишком много попыток. Попробуйте через 15 минут.' };
+  }
+
+  /* У учётки из .env пароль лежит в файле на сервере, и запись в базу ничего
+     бы не изменила: при следующем входе файл всё равно перекрыл бы её. */
+  const admin = envAdmin();
+  if (admin && user.email.toLowerCase() === admin.email) {
+    return { error: 'Пароль этой учётки задан в .env на сервере — менять его нужно там.' };
   }
 
   const parsed = schema.safeParse(Object.fromEntries(formData));

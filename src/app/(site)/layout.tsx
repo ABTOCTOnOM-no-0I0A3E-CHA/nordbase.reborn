@@ -3,6 +3,7 @@ import { Footer } from '@/components/site/Footer';
 import { JsonLd } from '@/components/site/JsonLd';
 import { PickedDatesProvider } from '@/components/site/PickedDates';
 import { Metrika } from '@/components/site/Metrika';
+import { CookieNotice } from '@/components/site/CookieNotice';
 import { loadSettings } from '@/lib/site-data';
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
@@ -19,6 +20,8 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       {/* Счётчик только на публичных страницах: посещения панели владельцем
           в статистике сайта — мусор. */}
       <Metrika id={settings.metrikaId} />
+      {/* Про cookie предупреждаем только там, где работает счётчик. */}
+      {settings.metrikaId ? <CookieNotice /> : null}
     </PickedDatesProvider>
   );
 }

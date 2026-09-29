@@ -20,6 +20,7 @@ const schema = z.object({
   whatsapp: z.string().trim().max(300),
   vk: z.string().trim().max(300),
   address: z.string().trim().max(200),
+  legalDetails: z.string().trim().max(400).default(''),
   lat: z.coerce.number().min(-90).max(90),
   lng: z.coerce.number().min(-180).max(180),
   /* Коды из Яндекс.Вебмастера и Google Search Console. Вставляют целиком

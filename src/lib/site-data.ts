@@ -205,6 +205,10 @@ export type SiteSettings = {
   reviewsUrl: string;
   reviewsLabel: string;
   address: string;
+  /* Реквизиты исполнителя: кто оказывает услугу, ИНН и регистрационный номер.
+     Закон о защите прав потребителей требует показывать их гостю до заказа,
+     и подвал — привычное для этого место. */
+  legalDetails: string;
   lat: number;
   lng: number;
   menu: { label: string; href: string }[];
@@ -237,6 +241,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   whatsapp: 'https://wa.me/79118028614',
   vk: 'https://vk.com/bazasever51',
   address: 'Полуостров Рыбачий, Мурманская область',
+  legalDetails: '',
   lat: 69.785748,
   lng: 32.102471,
   yandexVerification: '',
@@ -274,6 +279,7 @@ const settingsSchema = z.object({
   whatsapp: z.string().catch(DEFAULT_SETTINGS.whatsapp),
   vk: z.string().catch(DEFAULT_SETTINGS.vk),
   address: z.string().catch(DEFAULT_SETTINGS.address),
+  legalDetails: z.string().catch(DEFAULT_SETTINGS.legalDetails),
   lat: z.number().catch(DEFAULT_SETTINGS.lat),
   lng: z.number().catch(DEFAULT_SETTINGS.lng),
   menu: z

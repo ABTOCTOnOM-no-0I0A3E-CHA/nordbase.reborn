@@ -82,6 +82,19 @@ export default async function SettingsPage() {
               <Input name="address" defaultValue={settings.address} />
             </Field>
 
+            <div className="sm:col-span-2">
+              <Field
+                label="Реквизиты исполнителя"
+                hint="Кто оказывает услугу: ИП или компания, ИНН, ОГРНИП или ОГРН. Показывается в подвале — этого требует закон о защите прав потребителей"
+              >
+                <Input
+                  name="legalDetails"
+                  defaultValue={settings.legalDetails}
+                  placeholder="ИП Иванов Иван Иванович · ИНН 519000000000 · ОГРНИП 3195100000000000"
+                />
+              </Field>
+            </div>
+
             <Field
               label="Ссылка на отзывы"
               hint="Например, карточка базы на Яндекс.Картах. Пусто — кнопка не показывается"

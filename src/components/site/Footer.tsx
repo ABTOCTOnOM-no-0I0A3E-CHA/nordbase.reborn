@@ -30,6 +30,9 @@ export function Footer({ settings }: { settings: SiteSettings }) {
               {link.label}
             </a>
           ))}
+          <Link href="/usloviya" className="hover:text-ink">
+            Условия бронирования
+          </Link>
           <Link href="/policy" className="hover:text-ink">
             Обработка данных
           </Link>

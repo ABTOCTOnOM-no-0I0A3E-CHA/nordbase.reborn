@@ -144,9 +144,18 @@ export type StayOption = Pick<
   'id' | 'title' | 'capacity' | 'minGuests' | 'pricePerNight' | 'kind'
 >;
 
+export type TourOption = {
+  id: string;
+  title: string;
+  days: number;
+  /* Цена одного дня тура и за что она: за группу или с человека. */
+  price: number | null;
+  priceUnit: 'group' | 'person';
+};
+
 export async function loadRequestFormOptions(data: BlockData): Promise<{
   houses: StayOption[];
-  tours: { id: string; title: string }[];
+  tours: TourOption[];
 }> {
   const [houseRows, tourRows] = await Promise.all([
     data.houses.length > 0
@@ -166,7 +175,13 @@ export async function loadRequestFormOptions(data: BlockData): Promise<{
     data.tours.length > 0
       ? data.tours
       : db
-          .select({ id: toursTable.id, title: toursTable.title })
+          .select({
+            id: toursTable.id,
+            title: toursTable.title,
+            days: toursTable.days,
+            price: toursTable.price,
+            priceUnit: toursTable.priceUnit,
+          })
           .from(toursTable)
           .where(eq(toursTable.status, 'published'))
           .orderBy(asc(toursTable.sort)),
@@ -181,7 +196,13 @@ export async function loadRequestFormOptions(data: BlockData): Promise<{
       pricePerNight: h.pricePerNight,
       kind: h.kind,
     })),
-    tours: tourRows.map((t) => ({ id: t.id, title: t.title })),
+    tours: tourRows.map((t) => ({
+      id: t.id,
+      title: t.title,
+      days: t.days,
+      price: t.price,
+      priceUnit: t.priceUnit,
+    })),
   };
 }
 

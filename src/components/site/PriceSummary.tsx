@@ -28,6 +28,14 @@ function guestWord(count: number): string {
   return 'гостей';
 }
 
+function dayWord(count: number): string {
+  const tail = count % 10;
+  const teen = count % 100 >= 11 && count % 100 <= 14;
+  if (!teen && tail === 1) return 'день';
+  if (!teen && tail >= 2 && tail <= 4) return 'дня';
+  return 'дней';
+}
+
 /* Число «доезжает» до нового значения — так видно, что сумма изменилась
    именно от того поля, которое только что тронули. */
 function useCountUp(value: number): number {
@@ -66,8 +74,16 @@ export type StayPricing = {
   capacity: number;
 };
 
+export type TourPricing = {
+  title: string;
+  days: number;
+  price: number | null;
+  priceUnit: 'group' | 'person';
+};
+
 export function PriceSummary({
   stay,
+  tour,
   guests,
   nights,
   meals,
@@ -76,6 +92,7 @@ export function PriceSummary({
   prepayPercent,
 }: {
   stay: StayPricing | null;
+  tour: TourPricing | null;
   guests: number;
   nights: number;
   meals: boolean;
@@ -84,11 +101,20 @@ export function PriceSummary({
   mealsPrice: number;
   prepayPercent: number;
 }) {
-  const canCount = Boolean(stay?.pricePerNight) && nights > 0 && guests > 0;
+  /* Тур считается по дням: цена за день умножается на длительность, а если
+     она указана с человека — ещё и на число гостей. Проживание и тур
+     независимы: можно взять только тур, только домик или и то и другое. */
+  const tourTotal =
+    tour?.price && guests > 0
+      ? tour.price * tour.days * (tour.priceUnit === 'person' ? guests : 1)
+      : 0;
 
-  const stayTotal = canCount ? (stay?.pricePerNight ?? 0) * guests * nights : 0;
-  const mealsTotal = canCount && meals ? mealsPrice * guests * nights : 0;
-  const total = stayTotal + mealsTotal;
+  const hasStay = Boolean(stay?.pricePerNight) && nights > 0 && guests > 0;
+  const canCount = hasStay || tourTotal > 0;
+
+  const stayTotal = hasStay ? (stay?.pricePerNight ?? 0) * guests * nights : 0;
+  const mealsTotal = hasStay && meals ? mealsPrice * guests * nights : 0;
+  const total = stayTotal + mealsTotal + tourTotal;
   const prepay = Math.round((total * prepayPercent) / 100);
 
   const shownTotal = useCountUp(total);
@@ -107,12 +133,24 @@ export function PriceSummary({
   return (
     <div className="border-aurora/35 bg-aurora/8 request-total rounded-[14px] border px-4 py-4">
       <dl className="grid gap-2 text-[13.5px]">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <dt className="text-ink-2">
-            Проживание · {guests} {guestWord(guests)} × {nights} {nightWord(nights)}
-          </dt>
-          <dd className="tabular-nums">{money(stayTotal)}</dd>
-        </div>
+        {hasStay ? (
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <dt className="text-ink-2">
+              Проживание · {guests} {guestWord(guests)} × {nights} {nightWord(nights)}
+            </dt>
+            <dd className="tabular-nums">{money(stayTotal)}</dd>
+          </div>
+        ) : null}
+
+        {tourTotal > 0 && tour ? (
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <dt className="text-ink-2">
+              {tour.title} · {tour.days} {dayWord(tour.days)} × {money(tour.price ?? 0)}
+              {tour.priceUnit === 'person' ? ` × ${guests} ${guestWord(guests)}` : ''}
+            </dt>
+            <dd className="tabular-nums">{money(tourTotal)}</dd>
+          </div>
+        ) : null}
 
         {meals ? (
           <div className="flex flex-wrap items-baseline justify-between gap-2">

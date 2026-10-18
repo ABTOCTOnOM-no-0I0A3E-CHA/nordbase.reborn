@@ -371,7 +371,12 @@ function Tours({ block, data }: { block: Extract<Block, { type: 'tours' }>; data
             </div>
             <p className="text-ink-2 mt-3 flex-1 text-[14.5px]">{tour.summary}</p>
             {tour.price ? (
-              <p className="text-aurora mt-4 text-[14px] font-semibold">от {money(tour.price)}</p>
+              /* В базе лежит цена одного дня — на карточке показываем сумму
+                 за весь маршрут, иначе гость сравнивает несравнимое. */
+              <p className="text-aurora mt-4 text-[14px] font-semibold">
+                {money(tour.price * tour.days)}
+                {tour.priceUnit === 'person' ? ' с человека' : ' за группу'}
+              </p>
             ) : null}
           </Link>
         ))}

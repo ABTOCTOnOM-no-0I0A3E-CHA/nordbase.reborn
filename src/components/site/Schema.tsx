@@ -130,7 +130,8 @@ export function TourLd({
           ? {
               offers: {
                 '@type': 'Offer',
-                price: tour.price,
+                /* В базе цена одного дня — поисковику отдаём полную. */
+                price: tour.price * tour.days,
                 priceCurrency: 'RUB',
                 availability: 'https://schema.org/InStock',
                 url: `${siteUrl()}/rybachiy/tury/${tour.slug}`,

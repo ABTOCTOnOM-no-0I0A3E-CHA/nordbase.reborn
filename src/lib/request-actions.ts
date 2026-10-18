@@ -124,6 +124,15 @@ export async function submitRequest(
     saved ? `/admin/open/${saved.id}` : undefined,
   );
 
+  /* Отмечаем, что уведомление ушло: дальше за заявку отвечает фоновый цикл
+     напоминаний — он повторит, пока её не откроют в панели. */
+  if (saved) {
+    await db
+      .update(requests)
+      .set({ notifiedAt: new Date(), notifyCount: 1 })
+      .where(eq(requests.id, saved.id));
+  }
+
   if (notified.failed.length > 0) {
     console.warn(
       '[request] заявка сохранена, часть каналов молчит:',

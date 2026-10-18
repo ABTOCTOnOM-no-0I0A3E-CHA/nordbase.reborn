@@ -80,7 +80,9 @@ self.addEventListener('push', (event) => {
       badge: '/icon-192.png',
       /* Вибрация и звук по умолчанию: заявка — то, ради чего стоит отвлечься. */
       vibrate: [80, 40, 80],
-      tag: 'nordbase-request',
+      /* Метка своя у каждой заявки: повторные напоминания заменяют
+         предыдущее уведомление, а разные заявки не склеиваются в одно. */
+      tag: data.tag || 'nordbase-request',
       renotify: true,
       data: { url: data.url },
     }),

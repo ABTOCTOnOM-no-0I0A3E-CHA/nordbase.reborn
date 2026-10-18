@@ -16,6 +16,8 @@ import {
 
 export const statusEnum = pgEnum('status', ['draft', 'published']);
 export const roleEnum = pgEnum('role', ['owner', 'manager']);
+export const tourPriceUnitEnum = pgEnum('tour_price_unit', ['group', 'person']);
+
 export const requestStatusEnum = pgEnum('request_status', [
   'new',
   'in_work',
@@ -160,7 +162,12 @@ export const tours = pgTable(
     title: text('title').notNull(),
     summary: text('summary').notNull().default(''),
     days: integer('days').notNull().default(2),
+    /* Цена за один день тура. Итог считается днями: клиент ставит стоимость
+       дня, а не всей поездки, иначе двухдневный и трёхдневный маршруты
+       приходится вести двумя разными числами. */
     price: integer('price'),
+    /* За группу целиком или с каждого гостя — от этого зависит расчёт. */
+    priceUnit: tourPriceUnitEnum('price_unit').notNull().default('group'),
     coverId: uuid('cover_id').references(() => media.id, { onDelete: 'set null' }),
     body: body(),
     meta: meta(),
@@ -281,6 +288,11 @@ export const requests = pgTable(
     contactValue: text('contact_value').notNull().default(''),
     comment: text('comment').notNull().default(''),
     status: requestStatusEnum('status').notNull().default('new'),
+    /* Когда в последний раз отправляли уведомление и сколько раз всего.
+       На базе интернет пропадает, и единственный push в момент заявки
+       теряется безвозвратно: напоминаем, пока заявку не откроют. */
+    notifiedAt: timestamp('notified_at', { withTimezone: true }),
+    notifyCount: integer('notify_count').notNull().default(0),
     /* 152-ФЗ: фиксируем факт и момент согласия на обработку персональных данных. */
     consentAt: timestamp('consent_at', { withTimezone: true }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

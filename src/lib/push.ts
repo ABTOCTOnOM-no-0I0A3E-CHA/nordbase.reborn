@@ -59,6 +59,7 @@ export async function sendPush(
   title: string,
   body: string,
   url: string = '/admin/requests',
+  options: { tag?: string } = {},
 ): Promise<PushResult> {
   const devices = await db.select().from(pushSubscriptions);
   if (devices.length === 0) return { ok: false, sent: 0, reason: 'нет подключённых устройств' };
@@ -66,7 +67,7 @@ export async function sendPush(
   const keys = await ensurePushKeys();
   webpush.setVapidDetails(siteUrl(), keys.publicKey, keys.privateKey);
 
-  const payload = JSON.stringify({ title, body, url });
+  const payload = JSON.stringify({ title, body, url, tag: options.tag });
   let sent = 0;
 
   for (const device of devices) {
@@ -77,6 +78,10 @@ export async function sendPush(
           keys: { p256dh: device.p256dh, auth: device.auth },
         },
         payload,
+        /* Сутки хранения и высокая срочность: на базе связь появляется не
+           сразу, а уведомление без срока жизни сервис выбрасывает, как только
+           телефон не ответил. */
+        { TTL: 24 * 60 * 60, urgency: 'high' },
       );
       sent += 1;
     } catch (cause) {

@@ -300,6 +300,7 @@ const tourSchema = z.object({
   summary: z.string().trim().max(600).default(''),
   days: z.coerce.number().int().min(1).max(30),
   price: optionalInt,
+  priceUnit: z.enum(['group', 'person']).default('group'),
   coverId: z.union([z.uuid(), z.literal('')]).default(''),
   status: statusSchema,
 });
@@ -322,6 +323,7 @@ async function saveTourInner(formData: FormData): Promise<FormState> {
     summary: input.summary,
     days: input.days,
     price: input.price,
+    priceUnit: input.priceUnit,
     coverId: input.coverId || null,
     status: input.status,
     meta: readMeta(formData),

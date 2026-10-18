@@ -44,7 +44,7 @@ export function RequestForm({
   prepayPercent,
 }: {
   houses: Pick<HouseRecord, 'id' | 'title' | 'capacity' | 'minGuests' | 'pricePerNight' | 'kind'>[];
-  tours: Pick<TourRecord, 'id' | 'title'>[];
+  tours: Pick<TourRecord, 'id' | 'title' | 'days' | 'price' | 'priceUnit'>[];
   busyByHouse?: Record<string, string[]>;
   /* Варианты «Куда едете» и надпись на кнопке правятся в настройках сайта. */
   directions: string[];
@@ -84,6 +84,7 @@ export function RequestForm({
   const [name, setName] = useState('');
   const [guests, setGuests] = useState(2);
   const [houseId, setHouseId] = useState('');
+  const [tourId, setTourId] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [meals, setMeals] = useState(false);
@@ -102,6 +103,7 @@ export function RequestForm({
   }, [range]);
 
   const stay = houses.find((house) => house.id === houseId) ?? null;
+  const tour = tours.find((item) => item.id === tourId) ?? null;
   /* Дом 1 сдают только от пяти человек. Сказать об этом надо до отправки,
      иначе гость узнает отказ уже в ответном звонке. */
   const belowMin = stay ? guests < stay.minGuests : false;
@@ -194,9 +196,19 @@ export function RequestForm({
             id="tourId"
             name="tourId"
             placeholder="Не выбран"
+            value={tourId}
+            onChange={setTourId}
             options={[
               { value: '', label: 'Не выбран' },
-              ...tours.map((tour) => ({ value: tour.id, label: tour.title })),
+              ...tours.map((item) => ({
+                value: item.id,
+                label: item.title,
+                /* Цену показываем прямо в списке: гость выбирает тур,
+                   понимая, во что он обойдётся, а не после отправки. */
+                hint: item.price
+                  ? `${item.days} дн. · ${(item.price * item.days).toLocaleString('ru-RU')} ₽`
+                  : undefined,
+              })),
             ]}
           />
         </div>
@@ -431,6 +443,16 @@ export function RequestForm({
                   pricePerNight: stay.pricePerNight,
                   minGuests: stay.minGuests,
                   capacity: stay.capacity,
+                }
+              : null
+          }
+          tour={
+            tour
+              ? {
+                  title: tour.title,
+                  days: tour.days,
+                  price: tour.price,
+                  priceUnit: tour.priceUnit,
                 }
               : null
           }

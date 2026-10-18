@@ -94,8 +94,22 @@ export default async function TourEditor({ params }: { params: Promise<{ id: str
               suffix="дн."
             />
           </Field>
-          <Field label="Цена, ₽" hint="Пусто — цена не показывается">
+          <Field
+            label="Цена за день, ₽"
+            hint="Итог считается сам: цена дня × число дней. Пусто — тур в расчёт не попадёт"
+          >
             <NumberField name="price" min={0} step={500} defaultValue={tour?.price ?? ''} suffix="₽" />
+          </Field>
+
+          <Field label="Цена указана" hint="От этого зависит расчёт в заявке">
+            <Select
+              name="priceUnit"
+              defaultValue={tour?.priceUnit ?? 'group'}
+              options={[
+                { value: 'group', label: 'За группу целиком' },
+                { value: 'person', label: 'С каждого гостя' },
+              ]}
+            />
           </Field>
 
           <Field label="Состояние">
